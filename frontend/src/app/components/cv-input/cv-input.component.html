@@ -1,0 +1,86 @@
+<div class="cv-container">
+  <div class="cv-card">
+    <h1 class="cv-title">CV Analysis</h1>
+
+    <p class="cv-description">
+      Paste your CV text below to analyze and extract key information from your career history.
+      We'll help you identify strengths, skills, and opportunities for improvement.
+    </p>
+
+    <div class="form-group">
+      <label for="cvTextarea" class="label">Your CV Text</label>
+      <textarea
+        id="cvTextarea"
+        [(ngModel)]="cvText"
+        class="textarea"
+        placeholder="Paste your CV or career summary here... (e.g., John Doe, Software Engineer with 5 years of experience in web development...)"
+        rows="12"
+        [disabled]="isLoading()"
+      ></textarea>
+
+      <div class="character-counter">
+        <span>{{ characterCount }} characters</span>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button
+        (click)="onAnalyzeCv()"
+        [disabled]="isButtonDisabled"
+        class="btn btn-primary"
+      >
+        <span *ngIf="!isLoading()">Analyze CV</span>
+        <span *ngIf="isLoading()">Analyzing...</span>
+      </button>
+      <button
+        (click)="onClear()"
+        class="btn btn-secondary"
+        [disabled]="isLoading()"
+      >
+        Clear
+      </button>
+    </div>
+
+    <!-- Info Message -->
+    <div *ngIf="characterCount > 0 && !analysisResult() && !isLoading()" class="info-message">
+      Ready to analyze! Click the button above to get started.
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="error()" class="error-message">
+      <strong>Error:</strong> {{ error() }}
+    </div>
+
+    <!-- Analysis Results -->
+    <div *ngIf="analysisResult()" class="results-section">
+      <h2 class="results-title">Analysis Results</h2>
+
+      <!-- Summary -->
+      <div class="result-card">
+        <h3 class="result-card-title">Summary</h3>
+        <p class="result-card-content">{{ analysisResult()!.summary }}</p>
+      </div>
+
+      <!-- Suggested Roles -->
+      <div class="result-card">
+        <h3 class="result-card-title">Suggested Roles</h3>
+        <ul class="roles-list">
+          <li *ngFor="let role of analysisResult()!.suggestedRoles" class="role-item">
+            {{ role }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Keywords -->
+      <div class="result-card">
+        <h3 class="result-card-title">Key Skills & Keywords</h3>
+        <div class="keywords-container">
+          <span *ngFor="let keyword of analysisResult()!.keywords" class="keyword-badge">
+            {{ keyword }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
