@@ -40,22 +40,34 @@ public class GeminiCvAnalysisClient {
 
     private String buildPrompt(String cvText) {
         return """
-                Analyze the following CV text.
+            Analyze the following CV text for a job matching application.
 
-                Return only valid JSON.
-                Do not include markdown.
-                Do not include explanations outside JSON.
+            Return only valid JSON.
+            Do not include markdown.
+            Do not include explanations outside JSON.
 
-                JSON structure:
-                {
-                  "summary": "short summary of the candidate profile",
-                  "suggestedRoles": ["role 1", "role 2", "role 3"],
-                  "keywords": ["keyword 1", "keyword 2", "keyword 3"]
-                }
+            Extract information useful for searching, matching job postings and suggesting possible career directions.
 
-                CV text:
-                %s
-                """.formatted(cvText);
+            JSON structure:
+            {
+              "summary": "2-3 sentence summary of the candidate profile",
+              "searchRoles": [],
+              "alternativeCareerRoles": [],
+              "keywords": []
+            }
+
+            Rules:
+            - searchRoles must contain 5 to 8 realistic job titles that directly match the candidate's current profile, experience and stated skills.
+            - alternativeCareerRoles must contain 5 to 8 broader career directions where the candidate's skills, experience, education or transferable strengths could be useful.
+            - Alternative career roles do not need to contain the same technologies, tools or exact terms from the CV, but they must still be logically supported by the CV.
+            - Consider both hard skills and transferable skills, such as technical knowledge, analysis, communication, documentation, organization, languages, domain knowledge, project experience or customer-facing experience, if present in the CV.
+            - keywords must contain 10 to 15 relevant technical, domain, method, tool, transferable-skill and job-search keywords.            - Prefer concrete skills, technologies, tools, methods, domains and job-search terms.
+            - Do not invent experience that is not present in the CV.
+            - Keep the suggested roles realistic for the candidate's apparent experience level.
+
+            CV text:
+            %s
+            """.formatted(cvText);
     }
 
     private String cleanJson(String text) {

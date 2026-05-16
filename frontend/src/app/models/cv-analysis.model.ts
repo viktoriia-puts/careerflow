@@ -1,16 +1,10 @@
-/**
- * Request model for CV analysis
- */
 export interface CvAnalysisRequest {
   cvText: string;
 }
 
-/**
- * Response model for CV analysis
- */
 export interface CvAnalysisResponse {
   summary: string;
-  suggestedRoles: string[];
+  searchRoles: string[];
+  alternativeCareerRoles: string[];
   keywords: string[];
 }
-

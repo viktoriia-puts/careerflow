@@ -61,11 +61,21 @@
         <p class="result-card-content">{{ analysisResult()!.summary }}</p>
       </div>
 
-      <!-- Suggested Roles -->
+      <!-- Search Roles -->
       <div class="result-card">
-        <h3 class="result-card-title">Suggested Roles</h3>
+        <h3 class="result-card-title">Suggested Search Roles</h3>
         <ul class="roles-list">
-          <li *ngFor="let role of analysisResult()!.suggestedRoles" class="role-item">
+          <li *ngFor="let role of analysisResult()!.searchRoles" class="role-item">
+            {{ role }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Alternative Career Roles -->
+      <div class="result-card">
+        <h3 class="result-card-title">Alternative Career Directions</h3>
+        <ul class="roles-list">
+          <li *ngFor="let role of analysisResult()!.alternativeCareerRoles" class="role-item">
             {{ role }}
           </li>
         </ul>
