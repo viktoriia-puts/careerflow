@@ -61,7 +61,8 @@ public class GeminiCvAnalysisClient {
             - alternativeCareerRoles must contain 5 to 8 broader career directions where the candidate's skills, experience, education or transferable strengths could be useful.
             - Alternative career roles do not need to contain the same technologies, tools or exact terms from the CV, but they must still be logically supported by the CV.
             - Consider both hard skills and transferable skills, such as technical knowledge, analysis, communication, documentation, organization, languages, domain knowledge, project experience or customer-facing experience, if present in the CV.
-            - keywords must contain 10 to 15 relevant technical, domain, method, tool, transferable-skill and job-search keywords.            - Prefer concrete skills, technologies, tools, methods, domains and job-search terms.
+            - keywords must contain 30 to 40 relevant technical, domain, method, tool, transferable-skill and job-search keywords.            
+            - Prefer concrete skills, technologies, tools, methods, domains and job-search terms.
             - Do not invent experience that is not present in the CV.
             - Keep the suggested roles realistic for the candidate's apparent experience level.
 

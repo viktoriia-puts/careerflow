@@ -1,0 +1,52 @@
+<div class="search-container">
+  <div class="search-card">
+    <h1>Search Queries</h1>
+
+    <div *ngIf="!data" class="empty-state">
+      No cleaned analysis saved. Please generate search queries from the CV analysis page first.
+    </div>
+
+    <div *ngIf="data">
+      <section class="section">
+        <h3>Search Roles</h3>
+        <ul>
+          <li *ngFor="let r of data.searchRoles">{{ r }}</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h3>Alternative Career Roles</h3>
+        <ul>
+          <li *ngFor="let r of data.alternativeCareerRoles">{{ r }}</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h3>Keywords</h3>
+        <div class="keywords">
+          <span *ngFor="let k of data.keywords" class="keyword">{{ k }}</span>
+        </div>
+      </section>
+
+      <section class="section placeholder">
+        <h3>Role-title queries</h3>
+        <p class="muted">(Placeholder for generated role-title queries)</p>
+      </section>
+
+      <section class="section placeholder">
+        <h3>Requirement-based queries</h3>
+        <p class="muted">(Placeholder for generated requirement-based queries)</p>
+      </section>
+
+      <section class="section placeholder">
+        <h3>Alternative direction queries</h3>
+        <p class="muted">(Placeholder for alternative direction queries)</p>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-secondary" (click)="goBack()">Back to Analysis</button>
+      </div>
+    </div>
+  </div>
+</div>
+

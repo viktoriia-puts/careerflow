@@ -11,7 +11,8 @@
       <label for="cvTextarea" class="label">Your CV Text</label>
       <textarea
         id="cvTextarea"
-        [(ngModel)]="cvText"
+        [ngModel]="cvText()"
+        (ngModelChange)="cvText.set($event)"
         class="textarea"
         placeholder="Paste your CV or career summary here... (e.g., John Doe, Software Engineer with 5 years of experience in web development...)"
         rows="12"
@@ -66,9 +67,15 @@
         <h3 class="result-card-title">Suggested Search Roles</h3>
         <ul class="roles-list">
           <li *ngFor="let role of analysisResult()!.searchRoles" class="role-item">
-            {{ role }}
+            <span class="role-text">{{ role }}</span>
+            <button class="remove-btn" (click)="removeSearchRole(role)" title="Remove">✕</button>
           </li>
         </ul>
+
+        <div class="add-row">
+          <input [ngModel]="newSearchRole()" (ngModelChange)="newSearchRole.set($event)" placeholder="Add search role" class="small-input" />
+          <button class="btn btn-secondary small" (click)="addSearchRole()">Add</button>
+        </div>
       </div>
 
       <!-- Alternative Career Roles -->
@@ -76,9 +83,15 @@
         <h3 class="result-card-title">Alternative Career Directions</h3>
         <ul class="roles-list">
           <li *ngFor="let role of analysisResult()!.alternativeCareerRoles" class="role-item">
-            {{ role }}
+            <span class="role-text">{{ role }}</span>
+            <button class="remove-btn" (click)="removeAlternativeCareerRole(role)" title="Remove">✕</button>
           </li>
         </ul>
+
+        <div class="add-row">
+          <input [ngModel]="newAlternativeRole()" (ngModelChange)="newAlternativeRole.set($event)" placeholder="Add alternative role" class="small-input" />
+          <button class="btn btn-secondary small" (click)="addAlternativeCareerRole()">Add</button>
+        </div>
       </div>
 
       <!-- Keywords -->
@@ -87,8 +100,18 @@
         <div class="keywords-container">
           <span *ngFor="let keyword of analysisResult()!.keywords" class="keyword-badge">
             {{ keyword }}
+            <button class="chip-remove" (click)="removeKeyword(keyword)" title="Remove">✕</button>
           </span>
         </div>
+
+        <div class="add-row keywords-add">
+          <input [ngModel]="newKeyword()" (ngModelChange)="newKeyword.set($event)" placeholder="Add keyword" class="small-input" />
+          <button class="btn btn-secondary small" (click)="addKeyword()">Add</button>
+        </div>
+      </div>
+
+      <div class="generate-row">
+        <button class="btn btn-primary" (click)="onGenerateSearchQueries()">Generate Search Queries</button>
       </div>
     </div>
   </div>
