@@ -2,46 +2,118 @@
   <div class="search-card">
     <h1>Search Queries</h1>
 
-    <div *ngIf="!data" class="empty-state">
+    <div *ngIf="!cleanedAnalysis()" class="empty-state">
       No cleaned analysis saved. Please generate search queries from the CV analysis page first.
     </div>
 
-    <div *ngIf="data">
-      <section class="section">
-        <h3>Search Roles</h3>
-        <ul>
-          <li *ngFor="let r of data.searchRoles">{{ r }}</li>
-        </ul>
-      </section>
+    <div *ngIf="cleanedAnalysis()">
+      <!-- Cleaned Analysis Section -->
+      <div class="profile-section">
+        <h2>Cleaned Search Profile</h2>
 
-      <section class="section">
-        <h3>Alternative Career Roles</h3>
-        <ul>
-          <li *ngFor="let r of data.alternativeCareerRoles">{{ r }}</li>
-        </ul>
-      </section>
+        <section class="section">
+          <h3>Summary</h3>
+          <p class="summary-text">{{ cleanedAnalysis()!.summary }}</p>
+        </section>
 
-      <section class="section">
-        <h3>Keywords</h3>
-        <div class="keywords">
-          <span *ngFor="let k of data.keywords" class="keyword">{{ k }}</span>
-        </div>
-      </section>
+        <section class="section">
+          <h3>Search Roles</h3>
+          <ul class="role-list">
+            <li *ngFor="let r of cleanedAnalysis()!.searchRoles">{{ r }}</li>
+          </ul>
+        </section>
 
-      <section class="section placeholder">
-        <h3>Role-title queries</h3>
-        <p class="muted">(Placeholder for generated role-title queries)</p>
-      </section>
+        <section class="section">
+          <h3>Alternative Career Roles</h3>
+          <ul class="role-list">
+            <li *ngFor="let r of cleanedAnalysis()!.alternativeCareerRoles">{{ r }}</li>
+          </ul>
+        </section>
 
-      <section class="section placeholder">
-        <h3>Requirement-based queries</h3>
-        <p class="muted">(Placeholder for generated requirement-based queries)</p>
-      </section>
+        <section class="section">
+          <h3>Keywords</h3>
+          <div class="keywords-container">
+            <span *ngFor="let k of cleanedAnalysis()!.keywords" class="keyword-badge">{{ k }}</span>
+          </div>
+        </section>
+      </div>
 
-      <section class="section placeholder">
-        <h3>Alternative direction queries</h3>
-        <p class="muted">(Placeholder for alternative direction queries)</p>
-      </section>
+      <!-- Generated Queries Section -->
+      <div class="queries-section" *ngIf="generatedQueries()">
+        <h2>Generated Search Queries</h2>
+
+        <section class="section">
+          <h3>Role-Title Queries</h3>
+          <p class="section-desc">Direct job title searches matching your profile</p>
+          <ul class="query-list">
+            <li *ngFor="let query of generatedQueries()!.roleTitleQueries" class="query-item">
+              <span class="query-text">{{ query }}</span>
+              <button class="remove-btn" (click)="removeRoleTitleQuery(query)" title="Remove">✕</button>
+            </li>
+          </ul>
+          <p *ngIf="generatedQueries()!.roleTitleQueries.length === 0" class="muted">No role-title queries available</p>
+
+          <div class="add-row">
+            <input
+              [ngModel]="newRoleTitleQuery()"
+              (ngModelChange)="newRoleTitleQuery.set($event)"
+              placeholder="Add a new role-title query..."
+              class="small-input"
+            />
+            <button class="btn btn-secondary small" (click)="addRoleTitleQuery()">Add</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3>Requirement-Based Queries</h3>
+          <p class="section-desc">Skill and requirement-based searches for jobs with varied titles</p>
+          <ul class="query-list">
+            <li *ngFor="let query of generatedQueries()!.requirementBasedQueries" class="query-item">
+              <span class="query-text">{{ query }}</span>
+              <button class="remove-btn" (click)="removeRequirementBasedQuery(query)" title="Remove">✕</button>
+            </li>
+          </ul>
+          <p *ngIf="generatedQueries()!.requirementBasedQueries.length === 0" class="muted">No requirement-based queries available</p>
+
+          <div class="add-row">
+            <input
+              [ngModel]="newRequirementBasedQuery()"
+              (ngModelChange)="newRequirementBasedQuery.set($event)"
+              placeholder="Add a new requirement-based query..."
+              class="small-input"
+            />
+            <button class="btn btn-secondary small" (click)="addRequirementBasedQuery()">Add</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3>Alternative Direction Queries</h3>
+          <p class="section-desc">Searches based on alternative career paths and transferable skills</p>
+          <ul class="query-list">
+            <li *ngFor="let query of generatedQueries()!.alternativeDirectionQueries" class="query-item">
+              <span class="query-text">{{ query }}</span>
+              <button class="remove-btn" (click)="removeAlternativeDirectionQuery(query)" title="Remove">✕</button>
+            </li>
+          </ul>
+          <p *ngIf="generatedQueries()!.alternativeDirectionQueries.length === 0" class="muted">No alternative direction queries available</p>
+
+          <div class="add-row">
+            <input
+              [ngModel]="newAlternativeDirectionQuery()"
+              (ngModelChange)="newAlternativeDirectionQuery.set($event)"
+              placeholder="Add a new alternative direction query..."
+              class="small-input"
+            />
+            <button class="btn btn-secondary small" (click)="addAlternativeDirectionQuery()">Add</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Placeholder Section if no queries generated -->
+      <div class="queries-section placeholder" *ngIf="!generatedQueries()">
+        <h2>Generated Search Queries</h2>
+        <p class="muted">Click "Generate Search Queries" on the CV analysis page to generate searches.</p>
+      </div>
 
       <div class="actions">
         <button class="btn btn-secondary" (click)="goBack()">Back to Analysis</button>

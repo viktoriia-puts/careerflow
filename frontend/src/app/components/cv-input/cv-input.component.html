@@ -121,6 +121,10 @@
           ✓ Search profile saved successfully!
         </div>
 
+        <div *ngIf="generateError()" class="error-message">
+          <strong>Error:</strong> {{ generateError() }}
+        </div>
+
         <button
           class="btn btn-primary save-btn"
           (click)="onSaveSearchProfile()"
@@ -133,10 +137,11 @@
         <button
           class="btn btn-primary"
           (click)="onGenerateSearchQueries()"
-          [disabled]="!savedProfileId()"
+          [disabled]="!savedProfileId() || isGenerating()"
           [title]="!savedProfileId() ? 'Please save search profile first' : ''"
         >
-          Generate Search Queries
+          <span *ngIf="!isGenerating()">Generate Search Queries</span>
+          <span *ngIf="isGenerating()">Generating...</span>
         </button>
       </div>
     </div>

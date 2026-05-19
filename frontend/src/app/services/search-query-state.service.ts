@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { CvAnalysisResponse } from '../models/cv-analysis.model';
+import { SearchQueryGenerationResponse } from '../models/search-query-generation.model';
 
 @Injectable({ providedIn: 'root' })
 export class SearchQueryStateService {
   private cleanedAnalysis: CvAnalysisResponse | null = null;
+  private generatedQueries: SearchQueryGenerationResponse | null = null;
 
   setCleanedAnalysis(data: CvAnalysisResponse) {
     // store a copy
@@ -25,8 +27,27 @@ export class SearchQueryStateService {
     };
   }
 
+  setGeneratedQueries(data: SearchQueryGenerationResponse) {
+    // store a copy
+    this.generatedQueries = {
+      roleTitleQueries: [...data.roleTitleQueries],
+      requirementBasedQueries: [...data.requirementBasedQueries],
+      alternativeDirectionQueries: [...data.alternativeDirectionQueries]
+    };
+  }
+
+  getGeneratedQueries(): SearchQueryGenerationResponse | null {
+    if (!this.generatedQueries) return null;
+    return {
+      roleTitleQueries: [...this.generatedQueries.roleTitleQueries],
+      requirementBasedQueries: [...this.generatedQueries.requirementBasedQueries],
+      alternativeDirectionQueries: [...this.generatedQueries.alternativeDirectionQueries]
+    };
+  }
+
   clear() {
     this.cleanedAnalysis = null;
+    this.generatedQueries = null;
   }
 }
 

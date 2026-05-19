@@ -6,6 +6,7 @@ import { CvAnalysisResponse } from '../../models/cv-analysis.model';
 import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
 import { SearchProfileService } from '../../services/search-profile.service';
+import { SearchQueryService } from '../../services/search-query.service';
 import { SearchProfileCreateRequest } from '../../models/search-profile.model';
 
 @Component({
@@ -29,11 +30,15 @@ export class CvInputComponent {
   saveSuccess = signal(false);
   saveError = signal<string | null>(null);
   savedProfileId = signal<number | null>(null);
+  // Generate queries state
+  isGenerating = signal(false);
+  generateError = signal<string | null>(null);
 
   constructor(
     private cvAnalysisService: CvAnalysisService,
     private state: SearchQueryStateService,
     private searchProfileService: SearchProfileService,
+    private searchQueryService: SearchQueryService,
     private router: Router
   ) { }
 
@@ -133,21 +138,6 @@ export class CvInputComponent {
     this.newKeyword.set('');
   }
 
-  // Save cleaned analysis to frontend state and navigate to search queries page
-  onGenerateSearchQueries() {
-    const current = this.analysisResult();
-    if (!current) return;
-    // Save a deep copy to avoid later mutation issues
-    const copy: CvAnalysisResponse = {
-      summary: current.summary,
-      searchRoles: [...current.searchRoles],
-      alternativeCareerRoles: [...current.alternativeCareerRoles],
-      keywords: [...current.keywords]
-    };
-    this.state.setCleanedAnalysis(copy);
-    this.router.navigate(['/search-queries']);
-  }
-
   // Save search profile to backend
   onSaveSearchProfile() {
     const current = this.analysisResult();
@@ -179,6 +169,48 @@ export class CvInputComponent {
         this.isSaving.set(false);
         this.saveError.set('Failed to save search profile. Please try again.');
         console.error('Search profile save error:', error);
+      }
+    });
+  }
+
+  // Save cleaned analysis and generate queries
+  onGenerateSearchQueries() {
+    const profileId = this.savedProfileId();
+
+    if (!profileId) {
+      this.generateError.set('Search profile not saved. Please save first.');
+      return;
+    }
+
+    const current = this.analysisResult();
+    if (!current) return;
+
+    // Save cleaned analysis to state
+    const copy: CvAnalysisResponse = {
+      summary: current.summary,
+      searchRoles: [...current.searchRoles],
+      alternativeCareerRoles: [...current.alternativeCareerRoles],
+      keywords: [...current.keywords]
+    };
+    this.state.setCleanedAnalysis(copy);
+
+    // Generate queries from backend
+    this.isGenerating.set(true);
+    this.generateError.set(null);
+
+    this.searchQueryService.generateQueries(profileId).subscribe({
+      next: (response) => {
+        this.isGenerating.set(false);
+        // Store generated queries in state
+        this.state.setGeneratedQueries(response);
+        console.log('Search queries generated successfully:', response);
+        // Navigate to search queries page
+        this.router.navigate(['/search-queries']);
+      },
+      error: (error) => {
+        this.isGenerating.set(false);
+        this.generateError.set('Failed to generate search queries. Please try again.');
+        console.error('Generate queries error:', error);
       }
     });
   }
