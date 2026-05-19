@@ -276,6 +276,40 @@
 
 .generate-row { margin-top: 16px; text-align: center; }
 
+/* Save Search Profile Section */
+.save-section {
+  border-top: 2px solid #e0e0e0;
+  padding-top: 20px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.save-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.success-message {
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 15px;
+  border-radius: 4px;
+  color: #2e7d32;
+  font-size: 0.95rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .textarea:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;

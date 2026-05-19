@@ -5,6 +5,8 @@ import { CvAnalysisService } from '../../services/cv-analysis.service';
 import { CvAnalysisResponse } from '../../models/cv-analysis.model';
 import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
+import { SearchProfileService } from '../../services/search-profile.service';
+import { SearchProfileCreateRequest } from '../../models/search-profile.model';
 
 @Component({
   selector: 'app-cv-input',
@@ -22,10 +24,16 @@ export class CvInputComponent {
   newSearchRole = signal('');
   newAlternativeRole = signal('');
   newKeyword = signal('');
+  // Search profile saving state
+  isSaving = signal(false);
+  saveSuccess = signal(false);
+  saveError = signal<string | null>(null);
+  savedProfileId = signal<number | null>(null);
 
   constructor(
     private cvAnalysisService: CvAnalysisService,
     private state: SearchQueryStateService,
+    private searchProfileService: SearchProfileService,
     private router: Router
   ) { }
 
@@ -138,6 +146,41 @@ export class CvInputComponent {
     };
     this.state.setCleanedAnalysis(copy);
     this.router.navigate(['/search-queries']);
+  }
+
+  // Save search profile to backend
+  onSaveSearchProfile() {
+    const current = this.analysisResult();
+    if (!current) return;
+
+    this.isSaving.set(true);
+    this.saveError.set(null);
+    this.saveSuccess.set(false);
+
+    const request: SearchProfileCreateRequest = {
+      summary: current.summary,
+      searchRoles: current.searchRoles,
+      alternativeCareerRoles: current.alternativeCareerRoles,
+      keywords: current.keywords
+    };
+
+    this.searchProfileService.createSearchProfile(request).subscribe({
+      next: (response) => {
+        this.isSaving.set(false);
+        this.saveSuccess.set(true);
+        this.savedProfileId.set(response.id);
+        console.log('Search profile saved successfully');
+        // Clear after 3 seconds
+        setTimeout(() => {
+          this.saveSuccess.set(false);
+        }, 3000);
+      },
+      error: (error) => {
+        this.isSaving.set(false);
+        this.saveError.set('Failed to save search profile. Please try again.');
+        console.error('Search profile save error:', error);
+      }
+    });
   }
 }
 

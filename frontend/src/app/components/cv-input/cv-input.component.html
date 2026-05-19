@@ -111,9 +111,35 @@
       </div>
 
       <div class="generate-row">
-        <button class="btn btn-primary" (click)="onGenerateSearchQueries()">Generate Search Queries</button>
+      <!-- Save Search Profile Messages and Button -->
+      <div class="save-section">
+        <div *ngIf="saveError()" class="error-message">
+          <strong>Error:</strong> {{ saveError() }}
+        </div>
+
+        <div *ngIf="saveSuccess()" class="success-message">
+          ✓ Search profile saved successfully!
+        </div>
+
+        <button
+          class="btn btn-primary save-btn"
+          (click)="onSaveSearchProfile()"
+          [disabled]="isSaving() || !analysisResult()"
+        >
+          <span *ngIf="!isSaving()">Save Search Profile</span>
+          <span *ngIf="isSaving()">Saving...</span>
+        </button>
+
+        <button
+          class="btn btn-primary"
+          (click)="onGenerateSearchQueries()"
+          [disabled]="!savedProfileId()"
+          [title]="!savedProfileId() ? 'Please save search profile first' : ''"
+        >
+          Generate Search Queries
+        </button>
       </div>
     </div>
   </div>
 </div>
-
+</div>
