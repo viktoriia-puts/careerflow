@@ -1,4 +1,4 @@
-package com.careerflow.querygeneration.service;
+package com.careerflow.ai;
 
 import com.careerflow.querygeneration.dto.SearchQueryGenerationResponse;
 import com.careerflow.searchprofile.entity.SearchProfile;

@@ -1,5 +1,6 @@
 package com.careerflow.querygeneration.service;
 
+import com.careerflow.ai.GeminiSearchQueryClient;
 import com.careerflow.querygeneration.dto.SearchQueryGenerationResponse;
 import com.careerflow.searchprofile.entity.SearchProfile;
 import com.careerflow.searchprofile.repository.SearchProfileRepository;
