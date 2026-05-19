@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
 import { CvAnalysisResponse } from '../../models/cv-analysis.model';
 import { SearchQueryGenerationResponse } from '../../models/search-query-generation.model';
+// ...existing imports...
 
 @Component({
   selector: 'app-search-queries',
@@ -21,6 +22,7 @@ export class SearchQueriesComponent {
   newRoleTitleQuery = signal('');
   newRequirementBasedQuery = signal('');
   newAlternativeDirectionQuery = signal('');
+  // ...existing signals...
 
   constructor(private state: SearchQueryStateService, private router: Router) {
     this.cleanedAnalysis.set(this.state.getCleanedAnalysis());
@@ -125,6 +127,8 @@ export class SearchQueriesComponent {
   goBack() {
     this.router.navigate(['/cv']);
   }
+
+  // Job match functionality moved to CvInputComponent
 }
 
 

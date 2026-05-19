@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
 import { SearchProfileService } from '../../services/search-profile.service';
 import { SearchQueryService } from '../../services/search-query.service';
+import { JobMatchService } from '../../services/job-match.service';
+import { JobMatchAnalysisResponse } from '../../models/job-match.model';
 import { SearchProfileCreateRequest } from '../../models/search-profile.model';
 
 @Component({
@@ -33,12 +35,18 @@ export class CvInputComponent {
   // Generate queries state
   isGenerating = signal(false);
   generateError = signal<string | null>(null);
+  // Job match analysis state
+  jobDescription = signal('');
+  isAnalyzing = signal(false);
+  jobMatchError = signal<string | null>(null);
+  jobMatchResult = signal<JobMatchAnalysisResponse | null>(null);
 
   constructor(
     private cvAnalysisService: CvAnalysisService,
     private state: SearchQueryStateService,
     private searchProfileService: SearchProfileService,
     private searchQueryService: SearchQueryService,
+    private jobMatchService: JobMatchService,
     private router: Router
   ) { }
 
@@ -159,6 +167,8 @@ export class CvInputComponent {
         this.isSaving.set(false);
         this.saveSuccess.set(true);
         this.savedProfileId.set(response.id);
+        // store saved profile id in shared state so other pages can use it
+        this.state.setSavedProfileId(response.id);
         console.log('Search profile saved successfully');
         // Clear after 3 seconds
         setTimeout(() => {
@@ -211,6 +221,35 @@ export class CvInputComponent {
         this.isGenerating.set(false);
         this.generateError.set('Failed to generate search queries. Please try again.');
         console.error('Generate queries error:', error);
+      }
+    });
+  }
+
+  // Analyze job match using saved profile id
+  onAnalyzeMatch() {
+    const profileId = this.savedProfileId();
+    const jd = this.jobDescription().trim();
+
+    if (!profileId) {
+      this.jobMatchError.set('Please save a search profile first before analyzing a job.');
+      return;
+    }
+
+    if (!jd) return;
+
+    this.isAnalyzing.set(true);
+    this.jobMatchError.set(null);
+    this.jobMatchResult.set(null);
+
+    this.jobMatchService.analyzeJobMatch({ searchProfileId: profileId, jobDescription: jd }).subscribe({
+      next: (res) => {
+        this.jobMatchResult.set(res);
+        this.isAnalyzing.set(false);
+      },
+      error: (err) => {
+        this.jobMatchError.set('Failed to analyze job match. Please try again.');
+        this.isAnalyzing.set(false);
+        console.error('Job match error', err);
       }
     });
   }

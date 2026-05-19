@@ -144,6 +144,68 @@
           <span *ngIf="isGenerating()">Generating...</span>
         </button>
       </div>
+
+      <!-- Job Match Analysis (inside cv card) -->
+      <div class="jobmatch-section" *ngIf="analysisResult()">
+        <h3 class="result-card-title">Analyze Job Match</h3>
+
+        <p class="muted">Paste a job description to compare with the saved search profile.</p>
+
+        <textarea
+          [ngModel]="jobDescription()"
+          (ngModelChange)="jobDescription.set($event)"
+          rows="6"
+          class="textarea jobmatch-textarea"
+          placeholder="Paste job description here..."
+          [disabled]="isAnalyzing()"
+        ></textarea>
+
+        <div class="jobmatch-actions">
+          <button class="btn btn-primary" (click)="onAnalyzeMatch()" [disabled]="!savedProfileId() || !jobDescription().trim() || isAnalyzing()">
+            <span *ngIf="!isAnalyzing()">Analyze Match</span>
+            <span *ngIf="isAnalyzing()">Analyzing...</span>
+          </button>
+        </div>
+
+        <div *ngIf="jobMatchError()" class="error-message">
+          <strong>Error:</strong> {{ jobMatchError() }}
+        </div>
+
+        <div *ngIf="jobMatchResult()" class="analysis-result">
+          <h4>Match Result</h4>
+          <p><strong>Score:</strong> {{ jobMatchResult()!.matchScore }} / 100</p>
+          <p><strong>Recommendation:</strong> {{ jobMatchResult()!.recommendation }}</p>
+          <p><strong>Summary:</strong> {{ jobMatchResult()!.summary }}</p>
+
+          <section>
+            <h5>Matching Skills</h5>
+            <ul>
+              <li *ngFor="let s of jobMatchResult()!.matchingSkills">{{ s }}</li>
+            </ul>
+          </section>
+
+          <section>
+            <h5>Missing Skills</h5>
+            <ul>
+              <li *ngFor="let s of jobMatchResult()!.missingSkills">{{ s }}</li>
+            </ul>
+          </section>
+
+          <section>
+            <h5>Concerns</h5>
+            <ul>
+              <li *ngFor="let c of jobMatchResult()!.concerns">{{ c }}</li>
+            </ul>
+          </section>
+
+          <section>
+            <h5>Suggested Application Focus</h5>
+            <ul>
+              <li *ngFor="let f of jobMatchResult()!.suggestedApplicationFocus">{{ f }}</li>
+            </ul>
+          </section>
+        </div>
+      </div>
     </div>
   </div>
 </div>

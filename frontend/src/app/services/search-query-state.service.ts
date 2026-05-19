@@ -6,6 +6,7 @@ import { SearchQueryGenerationResponse } from '../models/search-query-generation
 export class SearchQueryStateService {
   private cleanedAnalysis: CvAnalysisResponse | null = null;
   private generatedQueries: SearchQueryGenerationResponse | null = null;
+  private savedProfileId: number | null = null;
 
   setCleanedAnalysis(data: CvAnalysisResponse) {
     // store a copy
@@ -36,6 +37,14 @@ export class SearchQueryStateService {
     };
   }
 
+  setSavedProfileId(id: number | null) {
+    this.savedProfileId = id;
+  }
+
+  getSavedProfileId(): number | null {
+    return this.savedProfileId;
+  }
+
   getGeneratedQueries(): SearchQueryGenerationResponse | null {
     if (!this.generatedQueries) return null;
     return {
@@ -48,6 +57,7 @@ export class SearchQueryStateService {
   clear() {
     this.cleanedAnalysis = null;
     this.generatedQueries = null;
+    this.savedProfileId = null;
   }
 }
 
