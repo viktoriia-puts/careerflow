@@ -143,6 +143,15 @@
           <span *ngIf="!isGenerating()">Generate Search Queries</span>
           <span *ngIf="isGenerating()">Generating...</span>
         </button>
+
+        <button
+          class="btn btn-primary"
+          (click)="onSearchAndRank()"
+          [disabled]="!canSearchAndRank()"
+          [title]="!canSearchAndRank() ? 'Please save search profile and analysis first' : ''"
+        >
+          Search Jobs and Rank Matches
+        </button>
       </div>
 
         <!-- Job Match Analysis (inside cv card) -->

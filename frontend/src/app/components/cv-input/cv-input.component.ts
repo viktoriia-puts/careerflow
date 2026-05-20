@@ -53,7 +53,40 @@ export class CvInputComponent {
   ) { }
 
   ngOnInit(): void {
-    // ensure results array matches initial inputs
+    // Load persisted state from state service
+    const savedCvText = this.state.getCvText();
+    if (savedCvText) {
+      this.cvText.set(savedCvText);
+    }
+
+    const savedAnalysis = this.state.getAnalysisResult();
+    if (savedAnalysis) {
+      this.analysisResult.set(savedAnalysis);
+    }
+
+    const savedProfileId = this.state.getSavedProfileId();
+    if (savedProfileId) {
+      this.savedProfileId.set(savedProfileId);
+      // restore save success state briefly
+      if (this.state.getSaveSuccess()) {
+        this.saveSuccess.set(true);
+        setTimeout(() => {
+          this.saveSuccess.set(false);
+        }, 3000);
+      }
+    }
+
+    const savedJobInputs = this.state.getJobInputs();
+    if (savedJobInputs && savedJobInputs.length > 0) {
+      this.jobInputs.set(savedJobInputs);
+    }
+
+    const savedJobResults = this.state.getJobMatchResults();
+    if (savedJobResults && savedJobResults.length > 0) {
+      this.jobMatchResults.set(savedJobResults);
+    }
+
+    // ensure results array matches current inputs
     this.syncResultsLength();
   }
 
@@ -81,6 +114,9 @@ export class CvInputComponent {
       next: (response) => {
         this.analysisResult.set(response);
         this.isLoading.set(false);
+        // persist to state service
+        this.state.setCvText(text);
+        this.state.setAnalysisResult(response);
         console.log('CV Analysis successful:', response);
       },
       error: (error) => {
@@ -95,6 +131,13 @@ export class CvInputComponent {
     this.cvText.set('');
     this.analysisResult.set(null);
     this.error.set(null);
+    // Also clear state service
+    this.state.clear();
+    this.savedProfileId.set(null);
+    this.saveSuccess.set(false);
+    this.saveError.set(null);
+    this.jobInputs.set([{ id: 1, description: '' }]);
+    this.jobMatchResults.set([]);
   }
 
   // Remove methods (do not mutate original object)
@@ -176,10 +219,15 @@ export class CvInputComponent {
         this.savedProfileId.set(response.id);
         // store saved profile id in shared state so other pages can use it
         this.state.setSavedProfileId(response.id);
+        this.state.setSaveSuccess(true);
+        // Also persist current state
+        this.state.setCvText(this.cvText());
+        this.state.setAnalysisResult(current);
         console.log('Search profile saved successfully');
         // Clear after 3 seconds
         setTimeout(() => {
           this.saveSuccess.set(false);
+          this.state.setSaveSuccess(false);
         }, 3000);
       },
       error: (error) => {
@@ -210,6 +258,11 @@ export class CvInputComponent {
       keywords: [...current.keywords]
     };
     this.state.setCleanedAnalysis(copy);
+    // Also persist full CV state before navigation
+    this.state.setCvText(this.cvText());
+    this.state.setAnalysisResult(current);
+    this.state.setJobInputs(this.jobInputs());
+    this.state.setJobMatchResults(this.jobMatchResults());
 
     // Generate queries from backend
     this.isGenerating.set(true);
@@ -238,13 +291,16 @@ export class CvInputComponent {
     if (index < 0 || index >= copy.length) return;
     copy[index].description = value;
     this.jobInputs.set(copy);
+    this.state.setJobInputs(copy);
     this.syncResultsLength();
   }
 
   addJobInput() {
     const current = this.jobInputs();
     const nextId = current.length > 0 ? Math.max(...current.map(j => j.id)) + 1 : 1;
-    this.jobInputs.set([...current, { id: nextId, description: '' }]);
+    const updated = [...current, { id: nextId, description: '' }];
+    this.jobInputs.set(updated);
+    this.state.setJobInputs(updated);
     this.syncResultsLength();
   }
 
@@ -257,6 +313,7 @@ export class CvInputComponent {
     if (current.length <= 1) return; // keep at least one
     const updated = current.filter((_, i) => i !== index);
     this.jobInputs.set(updated);
+    this.state.setJobInputs(updated);
     this.syncResultsLength();
   }
 
@@ -299,6 +356,8 @@ export class CvInputComponent {
           const resultsCopy = this.jobMatchResults().slice();
           resultsCopy[item.idx] = res;
           this.jobMatchResults.set(resultsCopy);
+          // Persist job match results to state
+          this.state.setJobMatchResults(resultsCopy);
           remaining -= 1;
           if (remaining <= 0) this.isAnalyzing.set(false);
         },
@@ -306,6 +365,7 @@ export class CvInputComponent {
           const resultsCopy = this.jobMatchResults().slice();
           resultsCopy[item.idx] = null;
           this.jobMatchResults.set(resultsCopy);
+          this.state.setJobMatchResults(resultsCopy);
           this.jobMatchError.set('Some analyses failed. Please try again.');
           console.error('Job match error', err);
           remaining -= 1;
@@ -313,6 +373,20 @@ export class CvInputComponent {
         }
       });
     });
+  }
+
+  canSearchAndRank(): boolean {
+    return Boolean(this.savedProfileId()) && (Boolean(this.state.getGeneratedQueries()) || Boolean(this.analysisResult()));
+  }
+
+  onSearchAndRank() {
+    // Persist current state before navigation
+    this.state.setCvText(this.cvText());
+    this.state.setAnalysisResult(this.analysisResult());
+    this.state.setJobInputs(this.jobInputs());
+    this.state.setJobMatchResults(this.jobMatchResults());
+
+    this.router.navigate(['/job-search-ranking']);
   }
 }
 

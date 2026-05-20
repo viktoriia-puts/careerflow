@@ -1,0 +1,48 @@
+<div class="ranking-container">
+  <div class="ranking-card">
+    <h1 class="ranking-title">Job Search Ranking</h1>
+
+    <p class="ranking-description">
+      We're searching and analyzing job opportunities based on your profile.
+      This process typically takes a few moments to complete.
+    </p>
+
+    <!-- Progress Section -->
+    <div class="progress-section">
+      <h2 class="progress-title">Search Progress</h2>
+      <ul class="progress-steps">
+        <li *ngFor="let step of progressSteps()" [ngClass]="'step-' + step.status">
+          <span class="step-number">•</span>
+          <span class="step-name">{{ step.name }}</span>
+          <span *ngIf="step.status === 'in-progress'" class="step-indicator">Processing...</span>
+          <span *ngIf="step.status === 'completed'" class="step-indicator">✓</span>
+          <span *ngIf="step.status === 'placeholder'" class="step-indicator">Coming soon</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Results Placeholder -->
+    <div class="results-placeholder">
+      <h2 class="placeholder-title">Ranked Job Results</h2>
+      <p class="placeholder-text">
+        Ranked job results will appear here once the search and matching analysis is complete.
+      </p>
+
+      <div class="placeholder-card">
+        <div class="placeholder-item">
+          <div class="item-title">Job Title • Company Name</div>
+          <div class="item-match-score">Match Score: 85%</div>
+          <div class="item-summary">Job summary and key details will be shown here...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="button-group">
+      <button class="btn btn-secondary" (click)="goBack()">
+        Back to Analysis
+      </button>
+    </div>
+  </div>
+</div>
+
