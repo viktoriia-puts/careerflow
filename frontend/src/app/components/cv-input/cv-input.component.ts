@@ -7,9 +7,9 @@ import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
 import { SearchProfileService } from '../../services/search-profile.service';
 import { SearchQueryService } from '../../services/search-query.service';
+import { SearchProfileCreateRequest } from '../../models/search-profile.model';
 import { JobMatchService } from '../../services/job-match.service';
 import { JobMatchAnalysisResponse } from '../../models/job-match.model';
-import { SearchProfileCreateRequest } from '../../models/search-profile.model';
 
 @Component({
   selector: 'app-cv-input',
@@ -35,11 +35,13 @@ export class CvInputComponent {
   // Generate queries state
   isGenerating = signal(false);
   generateError = signal<string | null>(null);
-  // Job match analysis state
-  jobDescription = signal('');
+
+  // Job match analysis state (support multiple job descriptions)
+  jobInputs = signal<{ id: number; description: string }[]>([{ id: 1, description: '' }]);
+  // results aligned with jobInputs indexes: same length, null when no result yet
+  jobMatchResults = signal<(JobMatchAnalysisResponse | null)[]>([]);
   isAnalyzing = signal(false);
   jobMatchError = signal<string | null>(null);
-  jobMatchResult = signal<JobMatchAnalysisResponse | null>(null);
 
   constructor(
     private cvAnalysisService: CvAnalysisService,
@@ -49,6 +51,11 @@ export class CvInputComponent {
     private jobMatchService: JobMatchService,
     private router: Router
   ) { }
+
+  ngOnInit(): void {
+    // ensure results array matches initial inputs
+    this.syncResultsLength();
+  }
 
   get characterCount(): number {
     return this.cvText().length;
@@ -225,32 +232,86 @@ export class CvInputComponent {
     });
   }
 
-  // Analyze job match using saved profile id
-  onAnalyzeMatch() {
-    const profileId = this.savedProfileId();
-    const jd = this.jobDescription().trim();
+  // Update single job description by index
+  updateJobDescription(index: number, value: string) {
+    const copy = this.jobInputs().map(j => ({ ...j }));
+    if (index < 0 || index >= copy.length) return;
+    copy[index].description = value;
+    this.jobInputs.set(copy);
+    this.syncResultsLength();
+  }
 
+  addJobInput() {
+    const current = this.jobInputs();
+    const nextId = current.length > 0 ? Math.max(...current.map(j => j.id)) + 1 : 1;
+    this.jobInputs.set([...current, { id: nextId, description: '' }]);
+    this.syncResultsLength();
+  }
+
+  canAnalyzeMatches(): boolean {
+    return Boolean(this.savedProfileId()) && !this.isAnalyzing() && this.jobInputs().some(j => j.description.trim().length > 0);
+  }
+
+  removeJobInput(index: number) {
+    const current = this.jobInputs();
+    if (current.length <= 1) return; // keep at least one
+    const updated = current.filter((_, i) => i !== index);
+    this.jobInputs.set(updated);
+    this.syncResultsLength();
+  }
+
+  private syncResultsLength() {
+    const inputs = this.jobInputs();
+    const results = this.jobMatchResults().slice();
+    while (results.length < inputs.length) results.push(null);
+    if (results.length > inputs.length) results.splice(inputs.length);
+    this.jobMatchResults.set(results);
+  }
+
+  // Analyze multiple job descriptions (one request per non-empty description)
+  onAnalyzeMatches() {
+    const profileId = this.savedProfileId();
     if (!profileId) {
-      this.jobMatchError.set('Please save a search profile first before analyzing a job.');
+      this.jobMatchError.set('Please save a search profile first before analyzing jobs.');
       return;
     }
 
-    if (!jd) return;
+    const inputs = this.jobInputs();
+    const nonEmpty = inputs
+      .map((j, idx) => ({ idx, desc: j.description.trim() }))
+      .filter(x => x.desc.length > 0);
 
-    this.isAnalyzing.set(true);
+    if (nonEmpty.length === 0) {
+      this.jobMatchError.set('Please enter at least one job description.');
+      return;
+    }
+
     this.jobMatchError.set(null);
-    this.jobMatchResult.set(null);
+    this.isAnalyzing.set(true);
 
-    this.jobMatchService.analyzeJobMatch({ searchProfileId: profileId, jobDescription: jd }).subscribe({
-      next: (res) => {
-        this.jobMatchResult.set(res);
-        this.isAnalyzing.set(false);
-      },
-      error: (err) => {
-        this.jobMatchError.set('Failed to analyze job match. Please try again.');
-        this.isAnalyzing.set(false);
-        console.error('Job match error', err);
-      }
+    this.syncResultsLength();
+
+    let remaining = nonEmpty.length;
+
+    nonEmpty.forEach(item => {
+      this.jobMatchService.analyzeJobMatch({ searchProfileId: profileId, jobDescription: item.desc }).subscribe({
+        next: (res) => {
+          const resultsCopy = this.jobMatchResults().slice();
+          resultsCopy[item.idx] = res;
+          this.jobMatchResults.set(resultsCopy);
+          remaining -= 1;
+          if (remaining <= 0) this.isAnalyzing.set(false);
+        },
+        error: (err) => {
+          const resultsCopy = this.jobMatchResults().slice();
+          resultsCopy[item.idx] = null;
+          this.jobMatchResults.set(resultsCopy);
+          this.jobMatchError.set('Some analyses failed. Please try again.');
+          console.error('Job match error', err);
+          remaining -= 1;
+          if (remaining <= 0) this.isAnalyzing.set(false);
+        }
+      });
     });
   }
 }

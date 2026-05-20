@@ -5,7 +5,8 @@ import { Router } from '@angular/router';
 import { SearchQueryStateService } from '../../services/search-query-state.service';
 import { CvAnalysisResponse } from '../../models/cv-analysis.model';
 import { SearchQueryGenerationResponse } from '../../models/search-query-generation.model';
-// ...existing imports...
+import { JobMatchService } from '../../services/job-match.service';
+import { JobMatchAnalysisResponse } from '../../models/job-match.model';
 
 @Component({
   selector: 'app-search-queries',
@@ -22,11 +23,21 @@ export class SearchQueriesComponent {
   newRoleTitleQuery = signal('');
   newRequirementBasedQuery = signal('');
   newAlternativeDirectionQuery = signal('');
-  // ...existing signals...
+  // Job match analysis state
+  jobDescription = signal('');
+  isAnalyzing = signal(false);
+  analysisError = signal<string | null>(null);
+  analysisResult = signal<JobMatchAnalysisResponse | null>(null);
+  savedProfileId = signal<number | null>(null);
 
-  constructor(private state: SearchQueryStateService, private router: Router) {
+  constructor(
+    private state: SearchQueryStateService,
+    private router: Router,
+    private jobMatchService: JobMatchService
+  ) {
     this.cleanedAnalysis.set(this.state.getCleanedAnalysis());
     this.generatedQueries.set(this.state.getGeneratedQueries());
+    this.savedProfileId.set(this.state.getSavedProfileId());
   }
 
   // Remove methods
@@ -128,7 +139,33 @@ export class SearchQueriesComponent {
     this.router.navigate(['/cv']);
   }
 
-  // Job match functionality moved to CvInputComponent
+  onAnalyzeMatch() {
+    const profileId = this.savedProfileId();
+    const jd = this.jobDescription().trim();
+
+    if (!profileId) {
+      this.analysisError.set('No saved profile selected. Please save a search profile first.');
+      return;
+    }
+
+    if (!jd) return;
+
+    this.isAnalyzing.set(true);
+    this.analysisError.set(null);
+    this.analysisResult.set(null);
+
+    this.jobMatchService.analyzeJobMatch({ searchProfileId: profileId, jobDescription: jd }).subscribe({
+      next: (res) => {
+        this.analysisResult.set(res);
+        this.isAnalyzing.set(false);
+      },
+      error: (err) => {
+        this.analysisError.set('Failed to analyze job match. Please try again.');
+        this.isAnalyzing.set(false);
+        console.error('Job match error', err);
+      }
+    });
+  }
 }
 
 

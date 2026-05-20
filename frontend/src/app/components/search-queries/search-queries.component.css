@@ -285,9 +285,41 @@ h3 {
   }
 }
 
+/* Job Match Analysis styles */
+.jobmatch-container {
+  display:flex;
+  justify-content:center;
+  padding:20px 30px 40px 30px;
+}
 
-/* Job Match Analysis styles (inside main card) */
-/* job match moved to CV page */
+.jobmatch-card {
+  width:100%;
+  max-width:900px;
+  background:#fff;
+  padding:20px;
+  border-radius:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.06);
+  margin-top:18px;
+}
+
+.jobmatch-card h2 { margin-top:0; }
+
+.jobmatch-card .textarea {
+  width:100%;
+  min-height:120px;
+  padding:12px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  resize:vertical;
+  font-family:inherit;
+}
+
+.jobmatch-actions { margin-top:12px; }
+
+.analysis-result { margin-top:16px; background:#f9f9f9; padding:12px; border-radius:6px; }
+.analysis-result h3 { margin-top:0; }
+
+.analysis-result ul { margin:8px 0 12px 18px; }
 
 
 
