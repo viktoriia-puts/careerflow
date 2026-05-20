@@ -3,10 +3,13 @@ package com.careerflow.jobsearch.controller;
 import com.careerflow.jobsearch.provider.AdzunaJobSearchProvider;
 import com.careerflow.jobsearch.provider.BundesagenturJobSearchProvider;
 import com.careerflow.jobsearch.provider.JoobleJobSearchProvider;
-
+import com.careerflow.jobsearch.provider.ArbeitnowJobSearchProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
+import com.careerflow.jobsearch.dto.JobSearchResult;
+import java.util.List;
 
 @RestController
 public class JobSearchTestController {
@@ -14,15 +17,36 @@ public class JobSearchTestController {
     private final BundesagenturJobSearchProvider bundesagenturProvider;
     private final AdzunaJobSearchProvider adzunaProvider;
     private final JoobleJobSearchProvider joobleProvider;
+    private final ArbeitnowJobSearchProvider arbeitnowProvider;
+    private final RemotiveJobSearchProvider remotiveProvider;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
             AdzunaJobSearchProvider adzunaProvider,
-            JoobleJobSearchProvider joobleProvider
+            JoobleJobSearchProvider joobleProvider,
+            ArbeitnowJobSearchProvider arbeitnowProvider,
+            RemotiveJobSearchProvider remotiveProvider
     ) {
         this.bundesagenturProvider = bundesagenturProvider;
         this.adzunaProvider = adzunaProvider;
         this.joobleProvider = joobleProvider;
+        this.arbeitnowProvider = arbeitnowProvider;
+        this.remotiveProvider = remotiveProvider;
+    }
+
+    @GetMapping("/api/job-search/test/remotive")
+    public String testRemotiveSearch(
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return remotiveProvider.searchJobs(query, limit);
+    }
+
+    @GetMapping("/api/job-search/test/arbeitnow")
+    public String testArbeitnowSearch(
+            @RequestParam(defaultValue = "1") int page
+    ) {
+        return arbeitnowProvider.searchJobs(page);
     }
 
     @GetMapping("/api/job-search/test/bundesagentur")
@@ -31,6 +55,28 @@ public class JobSearchTestController {
             @RequestParam String location
     ) {
         return bundesagenturProvider.searchJobs(query, location, 1, 5);
+    }
+
+    @GetMapping("/api/job-search/test/bundesagentur/details")
+    public String testBundesagenturDetails(
+            @RequestParam String refnr
+    ) {
+        return bundesagenturProvider.getJobDetails(refnr);
+    }
+
+    @GetMapping("/api/job-search/test/arbeitnow/normalized")
+    public List<JobSearchResult> testArbeitnowNormalized(
+            @RequestParam(defaultValue = "1") int page
+    ) {
+        return arbeitnowProvider.searchJobResults(page);
+    }
+
+    @GetMapping("/api/job-search/test/remotive/normalized")
+    public List<JobSearchResult> testRemotiveNormalized(
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return remotiveProvider.searchJobResults(query, limit);
     }
 
     @GetMapping("/api/job-search/test/adzuna")
