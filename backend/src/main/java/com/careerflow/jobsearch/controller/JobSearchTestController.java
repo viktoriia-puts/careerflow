@@ -12,7 +12,7 @@ import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
 import com.careerflow.jobsearch.dto.JobSearchResult;
 import java.util.List;
 import org.springframework.http.MediaType;
-
+import com.careerflow.jobsearch.service.ArbeitnowPrefilteredSearchService;
 
 @RestController
 public class JobSearchTestController {
@@ -23,6 +23,7 @@ public class JobSearchTestController {
     private final ArbeitnowJobSearchProvider arbeitnowProvider;
     private final RemotiveJobSearchProvider remotiveProvider;
     private final JobPrefilterService jobPrefilterService;
+    private final ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
@@ -30,13 +31,14 @@ public class JobSearchTestController {
             JoobleJobSearchProvider joobleProvider,
             ArbeitnowJobSearchProvider arbeitnowProvider,
             RemotiveJobSearchProvider remotiveProvider,
-            JobPrefilterService jobPrefilterService) {
+            JobPrefilterService jobPrefilterService, ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService) {
         this.bundesagenturProvider = bundesagenturProvider;
         this.adzunaProvider = adzunaProvider;
         this.joobleProvider = joobleProvider;
         this.arbeitnowProvider = arbeitnowProvider;
         this.remotiveProvider = remotiveProvider;
         this.jobPrefilterService = jobPrefilterService;
+        this.arbeitnowPrefilteredSearchService = arbeitnowPrefilteredSearchService;
     }
 
     @GetMapping(
@@ -47,13 +49,10 @@ public class JobSearchTestController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String roles,
             @RequestParam(required = false) String keywords,
-            @RequestParam(defaultValue = "30") int target
+            @RequestParam(defaultValue = "10") int target
     ) {
-        List<JobSearchResult> locationFilteredJobs =
-                arbeitnowProvider.searchCachedJobsByLocation(location);
-
-        return jobPrefilterService.prefilter(
-                locationFilteredJobs,
+        return arbeitnowPrefilteredSearchService.searchPrefilteredArbeitnowJobs(
+                location,
                 roles,
                 keywords,
                 target

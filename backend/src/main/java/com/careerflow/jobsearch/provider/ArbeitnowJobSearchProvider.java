@@ -22,9 +22,8 @@ import java.util.List;
 public class ArbeitnowJobSearchProvider {
     private final TextCleaningService textCleaningService;
     private static final int INITIAL_CACHE_PAGES = 5;
-    private static final int MAX_LOCATION_SEARCH_PAGES = 30;
-    private static final int MIN_LOCATION_MATCHES = 5;
-    private static final int FALLBACK_PAGE_BATCH_SIZE = 5;
+    private static final long PAGE_FETCH_DELAY_MILLIS = 3000;
+
 
     public ArbeitnowJobSearchProvider(TextCleaningService textCleaningService) {
         this.textCleaningService = textCleaningService;
@@ -44,6 +43,8 @@ public class ArbeitnowJobSearchProvider {
     // In-memory cache for normalized jobs
     private List<JobSearchResult> cachedJobs = new ArrayList<>();
     private LocalDateTime cacheUpdatedAt = null;
+    private int highestCachedPage = 0;
+    private boolean noMorePagesAvailable = false;
 
     public String searchJobs(int page) {
         try {
@@ -127,6 +128,8 @@ public class ArbeitnowJobSearchProvider {
 
             cachedJobs = searchJobResultsFromFirstPages(INITIAL_CACHE_PAGES);
             cacheUpdatedAt = LocalDateTime.now();
+            highestCachedPage = INITIAL_CACHE_PAGES;
+            noMorePagesAvailable = cachedJobs.isEmpty();
         } else {
             System.out.println("========== ARBEITNOW CACHE DEBUG ==========");
             System.out.println("Cache hit. Using cached Arbeitnow jobs.");
@@ -138,82 +141,122 @@ public class ArbeitnowJobSearchProvider {
         return new ArrayList<>(cachedJobs);
     }
 
+    public List<JobSearchResult> filterCachedJobsByLocation(String location) {
+        List<JobSearchResult> jobs = getCachedJobResults();
+
+        if (location == null || location.isBlank()) {
+            System.out.println("No location provided. Returning all cached Arbeitnow jobs: " + jobs.size());
+            return jobs;
+        }
+
+        List<String> normalizedLocationAliases = getLocationAliases(location);
+
+        System.out.println("========== CACHED LOCATION FILTER DEBUG ==========");
+        System.out.println("User location raw: " + location);
+        System.out.println("User location aliases: " + normalizedLocationAliases);
+        System.out.println("Cached jobs before location filter: " + jobs.size());
+        System.out.println("==================================================");
+
+        List<JobSearchResult> filtered = filterJobsByLocation(jobs, normalizedLocationAliases);
+
+        System.out.println("========== CACHED LOCATION FILTER RESULT ==========");
+        System.out.println("Location: " + location);
+        System.out.println("Location aliases used: " + normalizedLocationAliases);
+        System.out.println("Jobs after location filter: " + filtered.size());
+        System.out.println("===================================================");
+
+        return filtered;
+    }
+
+    public List<JobSearchResult> addNextCachedJobPages(int pagesToFetch) {
+        getCachedJobResults();
+
+        List<JobSearchResult> newJobs = new ArrayList<>();
+
+        if (noMorePagesAvailable) {
+            System.out.println("No more Arbeitnow pages available. Returning empty list.");
+            return newJobs;
+        }
+
+        System.out.println("========== ARBEITNOW ADD NEXT PAGES DEBUG ==========");
+        System.out.println("Highest cached page before fetch: " + highestCachedPage);
+        System.out.println("Pages to fetch: " + pagesToFetch);
+        System.out.println("Current cache size before fetch: " + cachedJobs.size());
+        System.out.println("====================================================");
+
+        for (int i = 0; i < pagesToFetch; i++) {
+            int nextPage = highestCachedPage + 1;
+
+            System.out.println("Fetching additional Arbeitnow page: " + nextPage);
+
+            List<JobSearchResult> pageResults;
+
+            try {
+                pageResults = searchJobResults(nextPage);
+            } catch (Exception e) {
+                System.out.println("Failed to fetch Arbeitnow page " + nextPage + ".");
+                System.out.println("Stopping additional page loading and returning already cached jobs.");
+                System.out.println("Reason: " + e.getMessage());
+
+                noMorePagesAvailable = true;
+                break;
+            }
+
+            highestCachedPage = nextPage;
+
+            System.out.println("Fetched jobs from page " + nextPage + ": " + pageResults.size());
+
+            if (pageResults.isEmpty()) {
+                System.out.println("Page " + nextPage + " returned 0 jobs. No more pages available.");
+                noMorePagesAvailable = true;
+                break;
+            }
+
+            cachedJobs.addAll(pageResults);
+            newJobs.addAll(pageResults);
+
+
+            waitBeforeNextArbeitnowPageRequest();
+        }
+
+        cacheUpdatedAt = LocalDateTime.now();
+
+        System.out.println("========== ARBEITNOW ADD NEXT PAGES RESULT ==========");
+        System.out.println("New jobs added: " + newJobs.size());
+        System.out.println("Highest cached page after fetch: " + highestCachedPage);
+        System.out.println("Current cache size after fetch: " + cachedJobs.size());
+        System.out.println("No more pages available: " + noMorePagesAvailable);
+        System.out.println("=====================================================");
+
+        return newJobs;
+    }
+
+    private void waitBeforeNextArbeitnowPageRequest() {
+        try {
+            System.out.println("Waiting " + PAGE_FETCH_DELAY_MILLIS + " ms before next Arbeitnow request...");
+            Thread.sleep(PAGE_FETCH_DELAY_MILLIS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Page fetch delay was interrupted.");
+        }
+    }
+
     public List<JobSearchResult> searchJobResultsFromFirstPages(int pages) {
         List<JobSearchResult> allResults = new ArrayList<>();
 
         for (int page = 1; page <= pages; page++) {
             allResults.addAll(searchJobResults(page));
+
+            if (page < pages) {
+                waitBeforeNextArbeitnowPageRequest();
+            }
         }
 
         return allResults;
     }
 
     public List<JobSearchResult> searchCachedJobsByLocation(String location) {
-        List<JobSearchResult> jobs = getCachedJobResults();
-
-        if (location == null || location.isBlank()) {
-            System.out.println("No location provided. Returning all Arbeitnow jobs: " + jobs.size());
-            return jobs;
-        }
-
-        List<String> normalizedLocationAliases = getLocationAliases(location);
-
-        System.out.println("========== LOCATION FILTER DEBUG ==========");
-        System.out.println("User location raw: " + location);
-        System.out.println("User location aliases: " + normalizedLocationAliases);
-        System.out.println("Initial cached jobs: " + jobs.size());
-        System.out.println("Minimum location matches wanted: " + MIN_LOCATION_MATCHES);
-        System.out.println("Maximum pages to search: " + MAX_LOCATION_SEARCH_PAGES);
-        System.out.println("Fallback page batch size: " + FALLBACK_PAGE_BATCH_SIZE);
-        System.out.println("===========================================");
-
-        List<JobSearchResult> filtered = filterJobsByLocation(jobs, normalizedLocationAliases);
-
-        int nextPage = INITIAL_CACHE_PAGES + 1;
-
-        while (filtered.size() < MIN_LOCATION_MATCHES && nextPage <= MAX_LOCATION_SEARCH_PAGES) {
-            int batchStartPage = nextPage;
-            int batchEndPage = Math.min(
-                    batchStartPage + FALLBACK_PAGE_BATCH_SIZE - 1,
-                    MAX_LOCATION_SEARCH_PAGES
-            );
-
-            System.out.println("========== LOCATION FALLBACK BATCH DEBUG ==========");
-            System.out.println("Only found " + filtered.size() + " jobs for location '" + location + "'.");
-            System.out.println("Fetching additional Arbeitnow pages: " + batchStartPage + "-" + batchEndPage);
-            System.out.println("Current cache size before fetch: " + cachedJobs.size());
-            System.out.println("===================================================");
-
-            List<JobSearchResult> newJobs = searchJobResultsFromPageRange(batchStartPage, batchEndPage);
-
-            if (newJobs.isEmpty()) {
-                System.out.println("No jobs returned from pages " + batchStartPage + "-" + batchEndPage
-                        + ". Stopping fallback search.");
-                break;
-            }
-
-            cachedJobs.addAll(newJobs);
-            cacheUpdatedAt = LocalDateTime.now();
-
-            System.out.println("Fetched jobs from pages " + batchStartPage + "-" + batchEndPage + ": " + newJobs.size());
-            System.out.println("Current cache size after fetch: " + cachedJobs.size());
-
-            filtered = filterJobsByLocation(cachedJobs, normalizedLocationAliases);
-
-            System.out.println("Jobs matching location after pages "
-                    + batchStartPage + "-" + batchEndPage + ": " + filtered.size());
-
-            nextPage = batchEndPage + 1;
-        }
-
-        System.out.println("========== LOCATION FILTER RESULT ==========");
-        System.out.println("Location: " + location);
-        System.out.println("Location aliases used: " + normalizedLocationAliases);
-        System.out.println("Returned jobs: " + filtered.size());
-        System.out.println("Cached jobs total: " + cachedJobs.size());
-        System.out.println("============================================");
-
-        return filtered;
+        return filterCachedJobsByLocation(location);
     }
 
     private List<JobSearchResult> filterJobsByLocation(
@@ -256,27 +299,6 @@ public class ArbeitnowJobSearchProvider {
         System.out.println("------------------------------------------");
 
         return filtered;
-    }
-
-    private List<JobSearchResult> searchJobResultsFromPageRange(int startPage, int endPage) {
-        List<JobSearchResult> allResults = new ArrayList<>();
-
-        for (int page = startPage; page <= endPage; page++) {
-            System.out.println("Fetching Arbeitnow page: " + page);
-
-            List<JobSearchResult> pageResults = searchJobResults(page);
-
-            System.out.println("Fetched jobs from page " + page + ": " + pageResults.size());
-
-            allResults.addAll(pageResults);
-
-            if (pageResults.isEmpty()) {
-                System.out.println("Page " + page + " returned 0 jobs. Stopping this batch early.");
-                break;
-            }
-        }
-
-        return allResults;
     }
 
     private String normalizeLocation(String value) {
