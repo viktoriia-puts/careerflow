@@ -21,6 +21,10 @@ import java.util.List;
 @Component
 public class ArbeitnowJobSearchProvider {
     private final TextCleaningService textCleaningService;
+    private static final int INITIAL_CACHE_PAGES = 5;
+    private static final int MAX_LOCATION_SEARCH_PAGES = 30;
+    private static final int MIN_LOCATION_MATCHES = 5;
+    private static final int FALLBACK_PAGE_BATCH_SIZE = 5;
 
     public ArbeitnowJobSearchProvider(TextCleaningService textCleaningService) {
         this.textCleaningService = textCleaningService;
@@ -121,7 +125,7 @@ public class ArbeitnowJobSearchProvider {
             System.out.println("CACHE_VALIDITY_HOURS: " + CACHE_VALIDITY_HOURS);
             System.out.println("===========================================");
 
-            cachedJobs = searchJobResults(1);
+            cachedJobs = searchJobResultsFromFirstPages(INITIAL_CACHE_PAGES);
             cacheUpdatedAt = LocalDateTime.now();
         } else {
             System.out.println("========== ARBEITNOW CACHE DEBUG ==========");
@@ -134,6 +138,16 @@ public class ArbeitnowJobSearchProvider {
         return new ArrayList<>(cachedJobs);
     }
 
+    public List<JobSearchResult> searchJobResultsFromFirstPages(int pages) {
+        List<JobSearchResult> allResults = new ArrayList<>();
+
+        for (int page = 1; page <= pages; page++) {
+            allResults.addAll(searchJobResults(page));
+        }
+
+        return allResults;
+    }
+
     public List<JobSearchResult> searchCachedJobsByLocation(String location) {
         List<JobSearchResult> jobs = getCachedJobResults();
 
@@ -142,31 +156,127 @@ public class ArbeitnowJobSearchProvider {
             return jobs;
         }
 
-        String normalizedUserLocation = normalizeLocation(location);
+        List<String> normalizedLocationAliases = getLocationAliases(location);
 
         System.out.println("========== LOCATION FILTER DEBUG ==========");
         System.out.println("User location raw: " + location);
-        System.out.println("User location normalized: " + normalizedUserLocation);
-        System.out.println("Jobs before filter: " + jobs.size());
-
-        List<JobSearchResult> filtered = jobs.stream()
-                .filter(job -> {
-                    String normalizedJobLocation = normalizeLocation(job.getLocation());
-                    boolean matches = normalizedJobLocation.contains(normalizedUserLocation);
-
-                    if (matches) {
-                        System.out.println("MATCH: job location raw = " + job.getLocation()
-                                + " | normalized = " + normalizedJobLocation);
-                    }
-
-                    return matches;
-                })
-                .toList();
-
-        System.out.println("Jobs after filter: " + filtered.size());
+        System.out.println("User location aliases: " + normalizedLocationAliases);
+        System.out.println("Initial cached jobs: " + jobs.size());
+        System.out.println("Minimum location matches wanted: " + MIN_LOCATION_MATCHES);
+        System.out.println("Maximum pages to search: " + MAX_LOCATION_SEARCH_PAGES);
+        System.out.println("Fallback page batch size: " + FALLBACK_PAGE_BATCH_SIZE);
         System.out.println("===========================================");
 
+        List<JobSearchResult> filtered = filterJobsByLocation(jobs, normalizedLocationAliases);
+
+        int nextPage = INITIAL_CACHE_PAGES + 1;
+
+        while (filtered.size() < MIN_LOCATION_MATCHES && nextPage <= MAX_LOCATION_SEARCH_PAGES) {
+            int batchStartPage = nextPage;
+            int batchEndPage = Math.min(
+                    batchStartPage + FALLBACK_PAGE_BATCH_SIZE - 1,
+                    MAX_LOCATION_SEARCH_PAGES
+            );
+
+            System.out.println("========== LOCATION FALLBACK BATCH DEBUG ==========");
+            System.out.println("Only found " + filtered.size() + " jobs for location '" + location + "'.");
+            System.out.println("Fetching additional Arbeitnow pages: " + batchStartPage + "-" + batchEndPage);
+            System.out.println("Current cache size before fetch: " + cachedJobs.size());
+            System.out.println("===================================================");
+
+            List<JobSearchResult> newJobs = searchJobResultsFromPageRange(batchStartPage, batchEndPage);
+
+            if (newJobs.isEmpty()) {
+                System.out.println("No jobs returned from pages " + batchStartPage + "-" + batchEndPage
+                        + ". Stopping fallback search.");
+                break;
+            }
+
+            cachedJobs.addAll(newJobs);
+            cacheUpdatedAt = LocalDateTime.now();
+
+            System.out.println("Fetched jobs from pages " + batchStartPage + "-" + batchEndPage + ": " + newJobs.size());
+            System.out.println("Current cache size after fetch: " + cachedJobs.size());
+
+            filtered = filterJobsByLocation(cachedJobs, normalizedLocationAliases);
+
+            System.out.println("Jobs matching location after pages "
+                    + batchStartPage + "-" + batchEndPage + ": " + filtered.size());
+
+            nextPage = batchEndPage + 1;
+        }
+
+        System.out.println("========== LOCATION FILTER RESULT ==========");
+        System.out.println("Location: " + location);
+        System.out.println("Location aliases used: " + normalizedLocationAliases);
+        System.out.println("Returned jobs: " + filtered.size());
+        System.out.println("Cached jobs total: " + cachedJobs.size());
+        System.out.println("============================================");
+
         return filtered;
+    }
+
+    private List<JobSearchResult> filterJobsByLocation(
+            List<JobSearchResult> jobs,
+            List<String> normalizedLocationAliases
+    ) {
+        List<JobSearchResult> filtered = new ArrayList<>();
+
+        System.out.println("---------- LOCATION FILTER PASS ----------");
+        System.out.println("Jobs before location filter: " + jobs.size());
+        System.out.println("Location aliases: " + normalizedLocationAliases);
+
+        for (JobSearchResult job : jobs) {
+            String normalizedJobLocation = normalizeLocation(job.getLocation());
+
+            boolean matches = false;
+            String matchedAlias = null;
+
+            for (String alias : normalizedLocationAliases) {
+                if (normalizedJobLocation.contains(alias)) {
+                    matches = true;
+                    matchedAlias = alias;
+                    break;
+                }
+            }
+
+            if (matches) {
+                System.out.println("LOCATION MATCH:");
+                System.out.println("Title: " + job.getTitle());
+                System.out.println("Company: " + job.getCompany());
+                System.out.println("Job location raw: " + job.getLocation());
+                System.out.println("Job location normalized: " + normalizedJobLocation);
+                System.out.println("Matched location alias: " + matchedAlias);
+
+                filtered.add(job);
+            }
+        }
+
+        System.out.println("Jobs after location filter: " + filtered.size());
+        System.out.println("------------------------------------------");
+
+        return filtered;
+    }
+
+    private List<JobSearchResult> searchJobResultsFromPageRange(int startPage, int endPage) {
+        List<JobSearchResult> allResults = new ArrayList<>();
+
+        for (int page = startPage; page <= endPage; page++) {
+            System.out.println("Fetching Arbeitnow page: " + page);
+
+            List<JobSearchResult> pageResults = searchJobResults(page);
+
+            System.out.println("Fetched jobs from page " + page + ": " + pageResults.size());
+
+            allResults.addAll(pageResults);
+
+            if (pageResults.isEmpty()) {
+                System.out.println("Page " + page + " returned 0 jobs. Stopping this batch early.");
+                break;
+            }
+        }
+
+        return allResults;
     }
 
     private String normalizeLocation(String value) {
@@ -183,6 +293,24 @@ public class ArbeitnowJobSearchProvider {
                 .replaceAll("[^a-z0-9 ]", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
+    }
+
+    private List<String> getLocationAliases(String location) {
+        String normalized = normalizeLocation(location);
+
+        if (normalized.equals("nuernberg") || normalized.equals("nuremberg")) {
+            return List.of("nuernberg", "nuremberg");
+        }
+
+        if (normalized.equals("muenchen") || normalized.equals("munich")) {
+            return List.of("muenchen", "munich");
+        }
+
+        if (normalized.equals("koeln") || normalized.equals("cologne")) {
+            return List.of("koeln", "cologne");
+        }
+
+        return List.of(normalized);
     }
 
 }

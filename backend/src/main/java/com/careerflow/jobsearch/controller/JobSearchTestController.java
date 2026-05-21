@@ -4,14 +4,15 @@ import com.careerflow.jobsearch.provider.AdzunaJobSearchProvider;
 import com.careerflow.jobsearch.provider.BundesagenturJobSearchProvider;
 import com.careerflow.jobsearch.provider.JoobleJobSearchProvider;
 import com.careerflow.jobsearch.provider.ArbeitnowJobSearchProvider;
+import com.careerflow.jobsearch.service.JobPrefilterService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
 import com.careerflow.jobsearch.dto.JobSearchResult;
 import java.util.List;
-import com.careerflow.jobsearch.service.TextCleaningService;
 import org.springframework.http.MediaType;
+
 
 @RestController
 public class JobSearchTestController {
@@ -21,7 +22,7 @@ public class JobSearchTestController {
     private final JoobleJobSearchProvider joobleProvider;
     private final ArbeitnowJobSearchProvider arbeitnowProvider;
     private final RemotiveJobSearchProvider remotiveProvider;
-    private final TextCleaningService textCleaningService;
+    private final JobPrefilterService jobPrefilterService;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
@@ -29,14 +30,34 @@ public class JobSearchTestController {
             JoobleJobSearchProvider joobleProvider,
             ArbeitnowJobSearchProvider arbeitnowProvider,
             RemotiveJobSearchProvider remotiveProvider,
-            TextCleaningService textCleaningService
-    ) {
+            JobPrefilterService jobPrefilterService) {
         this.bundesagenturProvider = bundesagenturProvider;
         this.adzunaProvider = adzunaProvider;
         this.joobleProvider = joobleProvider;
         this.arbeitnowProvider = arbeitnowProvider;
         this.remotiveProvider = remotiveProvider;
-        this.textCleaningService = textCleaningService;
+        this.jobPrefilterService = jobPrefilterService;
+    }
+
+    @GetMapping(
+            value = "/api/job-search/test/arbeitnow/prefiltered",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
+    public List<JobSearchResult> testArbeitnowPrefiltered(
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String roles,
+            @RequestParam(required = false) String keywords,
+            @RequestParam(defaultValue = "30") int target
+    ) {
+        List<JobSearchResult> locationFilteredJobs =
+                arbeitnowProvider.searchCachedJobsByLocation(location);
+
+        return jobPrefilterService.prefilter(
+                locationFilteredJobs,
+                roles,
+                keywords,
+                target
+        );
     }
 
     @GetMapping("/api/job-search/test/remotive")
