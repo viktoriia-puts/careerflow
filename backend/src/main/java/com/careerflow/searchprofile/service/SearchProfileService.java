@@ -5,6 +5,9 @@ import com.careerflow.searchprofile.dto.SearchProfileResponse;
 import com.careerflow.searchprofile.entity.SearchProfile;
 import com.careerflow.searchprofile.repository.SearchProfileRepository;
 import org.springframework.stereotype.Service;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SearchProfileService {
@@ -38,6 +41,20 @@ public class SearchProfileService {
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
+    public SearchProfile getSearchProfileEntityById(Long id) {
+        SearchProfile profile = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Search profile not found with id: " + id
+                ));
+
+        profile.getSearchRoles().size();
+        profile.getAlternativeCareerRoles().size();
+        profile.getKeywords().size();
+
+        return profile;
+    }
+
     /**
      * Map SearchProfile entity to SearchProfileResponse DTO
      *
@@ -54,5 +71,6 @@ public class SearchProfileService {
                 profile.getCreatedAt()
         );
     }
+
 }
 
