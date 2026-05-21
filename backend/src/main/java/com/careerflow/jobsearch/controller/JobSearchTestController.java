@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
 import com.careerflow.jobsearch.dto.JobSearchResult;
 import java.util.List;
+import com.careerflow.jobsearch.service.TextCleaningService;
+import org.springframework.http.MediaType;
 
 @RestController
 public class JobSearchTestController {
@@ -19,19 +21,22 @@ public class JobSearchTestController {
     private final JoobleJobSearchProvider joobleProvider;
     private final ArbeitnowJobSearchProvider arbeitnowProvider;
     private final RemotiveJobSearchProvider remotiveProvider;
+    private final TextCleaningService textCleaningService;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
             AdzunaJobSearchProvider adzunaProvider,
             JoobleJobSearchProvider joobleProvider,
             ArbeitnowJobSearchProvider arbeitnowProvider,
-            RemotiveJobSearchProvider remotiveProvider
+            RemotiveJobSearchProvider remotiveProvider,
+            TextCleaningService textCleaningService
     ) {
         this.bundesagenturProvider = bundesagenturProvider;
         this.adzunaProvider = adzunaProvider;
         this.joobleProvider = joobleProvider;
         this.arbeitnowProvider = arbeitnowProvider;
         this.remotiveProvider = remotiveProvider;
+        this.textCleaningService = textCleaningService;
     }
 
     @GetMapping("/api/job-search/test/remotive")
@@ -42,7 +47,20 @@ public class JobSearchTestController {
         return remotiveProvider.searchJobs(query, limit);
     }
 
-    @GetMapping("/api/job-search/test/arbeitnow")
+    @GetMapping(
+            value = "/api/job-search/test/arbeitnow/filtered",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
+    public List<JobSearchResult> testArbeitnowFiltered(
+            @RequestParam(required = false) String location
+    ) {
+        return arbeitnowProvider.searchCachedJobsByLocation(location);
+    }
+
+    @GetMapping(
+            value = "/api/job-search/test/arbeitnow",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
     public String testArbeitnowSearch(
             @RequestParam(defaultValue = "1") int page
     ) {
@@ -64,7 +82,10 @@ public class JobSearchTestController {
         return bundesagenturProvider.getJobDetails(refnr);
     }
 
-    @GetMapping("/api/job-search/test/arbeitnow/normalized")
+    @GetMapping(
+            value = "/api/job-search/test/arbeitnow/normalized",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
     public List<JobSearchResult> testArbeitnowNormalized(
             @RequestParam(defaultValue = "1") int page
     ) {
@@ -95,4 +116,5 @@ public class JobSearchTestController {
     ) {
         return joobleProvider.searchJobs(query, location, page);
     }
+
 }

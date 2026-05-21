@@ -25,8 +25,88 @@
 .ranking-description {
   font-size: 1rem;
   color: #666;
-  margin: 0 0 40px 0;
+  margin: 0 0 32px 0;
   line-height: 1.6;
+}
+
+/* Search Constraints Section */
+.search-constraints-section {
+  margin-bottom: 32px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
+  border-left: 4px solid #667eea;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+}
+
+.constraint-group {
+  margin-bottom: 0;
+}
+
+.constraint-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.constraint-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.constraint-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.constraint-input:disabled {
+  background-color: #e8e8e8;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.helper-text {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* Search Action Section */
+.search-action-section {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.search-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.search-message p {
+  margin: 0;
 }
 
 /* Progress Section */
@@ -215,6 +295,11 @@
   border-color: #ccc;
 }
 
+.btn-large {
+  padding: 14px 32px;
+  font-size: 1.05rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .ranking-card {
@@ -231,6 +316,14 @@
 
   .progress-title {
     font-size: 1.1rem;
+  }
+
+  .search-constraints-section {
+    padding: 16px;
+  }
+
+  .section-title {
+    font-size: 1.05rem;
   }
 }
 

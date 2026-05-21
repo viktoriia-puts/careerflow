@@ -7,6 +7,42 @@
       This process typically takes a few moments to complete.
     </p>
 
+    <!-- Search Constraints Section -->
+    <div class="search-constraints-section">
+      <h2 class="section-title">Search Constraints</h2>
+
+      <div class="constraint-group">
+        <label for="jobLocation" class="constraint-label">Location</label>
+        <input
+          id="jobLocation"
+          type="text"
+          [ngModel]="jobSearchLocation()"
+          (ngModelChange)="jobSearchLocation.set($event)"
+          class="constraint-input"
+          placeholder="Enter location..."
+          [disabled]="isSearchStarted()"
+        />
+        <p class="helper-text">Remote jobs are included automatically.</p>
+      </div>
+    </div>
+
+    <!-- Search Action -->
+    <div class="search-action-section" *ngIf="!isSearchStarted()">
+      <button
+        class="btn btn-primary btn-large"
+        (click)="onStartJobSearch()"
+        [disabled]="!canStartSearch()"
+        [title]="!canStartSearch() ? 'Please fill in all required fields' : ''"
+      >
+        Start Job Search and Ranking
+      </button>
+    </div>
+
+    <!-- Search Message -->
+    <div *ngIf="searchMessage()" class="search-message">
+      <p>{{ searchMessage() }}</p>
+    </div>
+
     <!-- Progress Section -->
     <div class="progress-section">
       <h2 class="progress-title">Search Progress</h2>
@@ -22,7 +58,7 @@
     </div>
 
     <!-- Results Placeholder -->
-    <div class="results-placeholder">
+    <div class="results-placeholder" *ngIf="isSearchStarted()">
       <h2 class="placeholder-title">Ranked Job Results</h2>
       <p class="placeholder-text">
         Ranked job results will appear here once the search and matching analysis is complete.

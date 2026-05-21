@@ -17,6 +17,10 @@ export class SearchQueryStateService {
   private jobInputs: { id: number; description: string }[] = [{ id: 1, description: '' }];
   private jobMatchResults: (JobMatchAnalysisResponse | null)[] = [];
 
+  // Job search ranking state
+  private jobSearchLocation: string = 'Nürnberg';
+  private includeRemote: boolean = true;
+
   // CV text persistence
   setCvText(text: string) {
     this.cvText = text;
@@ -122,6 +126,23 @@ export class SearchQueryStateService {
     return this.jobMatchResults.map(r => r ? { ...r } : null);
   }
 
+  // Job search ranking state
+  setJobSearchLocation(location: string) {
+    this.jobSearchLocation = location;
+  }
+
+  getJobSearchLocation(): string {
+    return this.jobSearchLocation;
+  }
+
+  setIncludeRemote(includeRemote: boolean) {
+    this.includeRemote = includeRemote;
+  }
+
+  getIncludeRemote(): boolean {
+    return this.includeRemote;
+  }
+
   clear() {
     this.cvText = '';
     this.analysisResult = null;
@@ -131,6 +152,8 @@ export class SearchQueryStateService {
     this.saveSuccess = false;
     this.jobInputs = [{ id: 1, description: '' }];
     this.jobMatchResults = [];
+    this.jobSearchLocation = 'Nürnberg';
+    this.includeRemote = true;
   }
 }
 
