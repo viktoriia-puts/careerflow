@@ -57,20 +57,106 @@
       </ul>
     </div>
 
-    <!-- Results Placeholder -->
-    <div class="results-placeholder" *ngIf="isSearchStarted()">
-      <h2 class="placeholder-title">Ranked Job Results</h2>
-      <p class="placeholder-text">
-        Ranked job results will appear here once the search and matching analysis is complete.
+    <!-- Loading -->
+    <div class="results-section" *ngIf="isLoadingRanking()">
+      <h2 class="results-title">Searching and ranking jobs...</h2>
+      <p class="results-text">
+        Please wait. We are fetching jobs, filtering them, and analyzing matches with Gemini.
+      </p>
+    </div>
+
+    <!-- Error -->
+    <div class="search-message error-message" *ngIf="rankingError()">
+      <p>{{ rankingError() }}</p>
+    </div>
+
+    <!-- Ranked Results -->
+    <div class="results-section" *ngIf="!isLoadingRanking() && rankedJobs().length > 0">
+      <h2 class="results-title">Ranked Job Results</h2>
+      <p class="results-text">
+        These jobs were found through Arbeitnow, prefiltered by your saved profile, and ranked by Gemini.
       </p>
 
-      <div class="placeholder-card">
-        <div class="placeholder-item">
-          <div class="item-title">Job Title • Company Name</div>
-          <div class="item-match-score">Match Score: 85%</div>
-          <div class="item-summary">Job summary and key details will be shown here...</div>
+      <div class="job-result-card" *ngFor="let result of rankedJobs(); let i = index">
+        <div class="job-result-header">
+          <div>
+            <h3 class="job-title">
+              #{{ i + 1 }} {{ result.job.title }}
+            </h3>
+            <p class="job-company">
+              {{ result.job.company }} • {{ result.job.location }}
+            </p>
+          </div>
+
+          <div class="match-badge">
+            {{ result.matchAnalysis.matchScore }}%
+          </div>
         </div>
+
+        <div class="recommendation-row">
+          {{ result.matchAnalysis.recommendation }}
+        </div>
+
+        <p class="job-summary">
+          {{ result.matchAnalysis.summary }}
+        </p>
+
+        <div class="match-section" *ngIf="result.matchAnalysis.matchingSkills?.length">
+          <h4>Matching skills</h4>
+          <div class="tag-list">
+        <span class="match-tag" *ngFor="let skill of result.matchAnalysis.matchingSkills">
+          {{ skill }}
+        </span>
+          </div>
+        </div>
+
+        <div class="match-section" *ngIf="result.matchAnalysis.missingSkills?.length">
+          <h4>Missing skills</h4>
+          <div class="tag-list">
+        <span class="missing-tag" *ngFor="let skill of result.matchAnalysis.missingSkills">
+          {{ skill }}
+        </span>
+          </div>
+        </div>
+
+        <div class="match-section" *ngIf="result.matchAnalysis.concerns?.length">
+          <h4>Concerns</h4>
+          <ul class="concern-list">
+            <li *ngFor="let concern of result.matchAnalysis.concerns">
+              {{ concern }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="match-section" *ngIf="result.matchAnalysis.suggestedApplicationFocus?.length">
+          <h4>Suggested application focus</h4>
+          <ul class="focus-list">
+            <li *ngFor="let focus of result.matchAnalysis.suggestedApplicationFocus">
+              {{ focus }}
+            </li>
+          </ul>
+        </div>
+
+        <a
+          class="job-link"
+          [href]="result.job.url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open job posting
+        </a>
       </div>
+    </div>
+
+    <!-- Empty Result -->
+    <div
+      class="results-section"
+      *ngIf="!isLoadingRanking() && isSearchStarted() && rankedJobs().length === 0 && !rankingError()"
+    >
+      <h2 class="results-title">No matching jobs found</h2>
+      <p class="results-text">
+        No ranked jobs were found for this location and profile.
+      </p>
     </div>
 
     <!-- Back Button -->
