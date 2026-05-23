@@ -17,6 +17,7 @@ import com.careerflow.jobsearch.dto.RankedJobSearchResult;
 import com.careerflow.jobsearch.service.JobMatchRankingService;
 import com.careerflow.searchprofile.entity.SearchProfile;
 import com.careerflow.searchprofile.service.SearchProfileService;
+import com.careerflow.jobsearch.service.MultiProviderPrefilteredJobSearchService;
 
 @RestController
 public class JobSearchTestController {
@@ -30,6 +31,7 @@ public class JobSearchTestController {
     private final ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService;
     private final SearchProfileService searchProfileService;
     private final JobMatchRankingService jobMatchRankingService;
+    private final MultiProviderPrefilteredJobSearchService multiProviderPrefilteredJobSearchService;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
@@ -37,7 +39,7 @@ public class JobSearchTestController {
             JoobleJobSearchProvider joobleProvider,
             ArbeitnowJobSearchProvider arbeitnowProvider,
             RemotiveJobSearchProvider remotiveProvider,
-            JobPrefilterService jobPrefilterService, ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService, SearchProfileService searchProfileService, JobMatchRankingService jobMatchRankingService) {
+            JobPrefilterService jobPrefilterService, ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService, SearchProfileService searchProfileService, JobMatchRankingService jobMatchRankingService, MultiProviderPrefilteredJobSearchService multiProviderPrefilteredJobSearchService) {
         this.bundesagenturProvider = bundesagenturProvider;
         this.adzunaProvider = adzunaProvider;
         this.joobleProvider = joobleProvider;
@@ -47,6 +49,7 @@ public class JobSearchTestController {
         this.arbeitnowPrefilteredSearchService = arbeitnowPrefilteredSearchService;
         this.searchProfileService = searchProfileService;
         this.jobMatchRankingService = jobMatchRankingService;
+        this.multiProviderPrefilteredJobSearchService = multiProviderPrefilteredJobSearchService;
     }
 
     @GetMapping(
@@ -74,7 +77,7 @@ public class JobSearchTestController {
     ) {
         return remotiveProvider.searchJobs(query, limit);
     }
-
+/*
     @GetMapping(
             value = "/api/job-search/test/arbeitnow/ranked",
             produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
@@ -96,6 +99,53 @@ public class JobSearchTestController {
                 );
 
         return jobMatchRankingService.rankJobs(profile, prefilteredJobs);
+    }*/
+
+    @GetMapping(
+            value = "/api/job-search/test/arbeitnow/ranked",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
+    public List<RankedJobSearchResult> testArbeitnowRanked(
+            @RequestParam Long profileId,
+            @RequestParam(required = false) String location,
+            @RequestParam(defaultValue = "10") int target
+    ) {
+        SearchProfile profile =
+                searchProfileService.getSearchProfileEntityById(profileId);
+
+        List<JobSearchResult> prefilteredJobs =
+                multiProviderPrefilteredJobSearchService.searchPrefilteredJobs(
+                        location,
+                        profile.getSearchRoles(),
+                        profile.getKeywords(),
+                        target
+                );
+
+        return jobMatchRankingService.rankJobs(
+                profile,
+                prefilteredJobs,
+                target
+        );
+    }
+
+    @GetMapping(
+            value = "/api/job-search/test/prefiltered",
+            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
+    )
+    public List<JobSearchResult> testMultiProviderPrefiltered(
+            @RequestParam Long profileId,
+            @RequestParam(required = false) String location,
+            @RequestParam(defaultValue = "10") int target
+    ) {
+        SearchProfile profile =
+                searchProfileService.getSearchProfileEntityById(profileId);
+
+        return multiProviderPrefilteredJobSearchService.searchPrefilteredJobs(
+                location,
+                profile.getSearchRoles(),
+                profile.getKeywords(),
+                target
+        );
     }
 
     @GetMapping(

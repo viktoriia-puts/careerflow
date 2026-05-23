@@ -49,6 +49,20 @@ public class JobMatchRankingService {
         return rankedJobs;
     }
 
+    public List<RankedJobSearchResult> rankJobs(
+            SearchProfile profile,
+            List<JobSearchResult> jobs,
+            int limit
+    ) {
+        List<RankedJobSearchResult> rankedJobs = rankJobs(profile, jobs);
+
+        if (limit <= 0 || rankedJobs.size() <= limit) {
+            return rankedJobs;
+        }
+
+        return new ArrayList<>(rankedJobs.subList(0, limit));
+    }
+
     private String buildJobDescriptionForGemini(JobSearchResult job) {
         if (job == null) {
             return "";
