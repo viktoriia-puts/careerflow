@@ -9,7 +9,7 @@ import { RankedJobSearchResult } from '../models/ranked-job.model';
 })
 export class JobMatchService {
   private apiUrl = 'http://localhost:8081/api/job-matches';
-  private rankedApiUrl = 'http://localhost:8081/api/job-search/test/arbeitnow/ranked';
+  private rankedApiUrl = 'http://localhost:8081/api/job-search/ranked';
 
   constructor(private http: HttpClient) { }
 
@@ -17,15 +17,17 @@ export class JobMatchService {
     return this.http.post<JobMatchAnalysisResponse>(`${this.apiUrl}/analyze`, request);
   }
 
-  getRankedArbeitnowJobs(
+  getRankedJobs(
     profileId: number,
     location: string,
-    target: number = 10
+    targetPerProvider: number = 25,
+    jobLevel: string = 'JUNIOR'
   ): Observable<RankedJobSearchResult[]> {
     const params = new HttpParams()
       .set('profileId', profileId.toString())
       .set('location', location)
-      .set('target', target.toString());
+      .set('targetPerProvider', targetPerProvider.toString())
+      .set('jobLevel', jobLevel);
 
     return this.http.get<RankedJobSearchResult[]>(this.rankedApiUrl, { params });
   }

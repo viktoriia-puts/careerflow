@@ -63,14 +63,14 @@ public class GeminiCvAnalysisClient {
         }
 
         Rules:
-        - searchRoles must contain 8 to 14 realistic job titles that directly match the candidate's current profile, experience and stated skills.
+        - searchRoles must contain 20 to 30 realistic job titles that directly match the candidate's current profile, experience and stated skills.
         - searchRoles should include both English and German job-title variants where useful.
         - Example: if "Backend Developer" is relevant, also include a realistic German equivalent such as "Backend Entwickler" or "Softwareentwickler Backend".
-        - alternativeCareerRoles must contain 8 to 14 broader career directions where the candidate's skills, experience, education or transferable strengths could be useful.
+        - alternativeCareerRoles must contain 20 to 30 broader career directions where the candidate's skills, experience, education or transferable strengths could be useful.
         - alternativeCareerRoles should also include both English and German variants where useful.
         - Alternative career roles do not need to contain the same technologies, tools or exact terms from the CV, but they must still be logically supported by the CV.
         - Consider both hard skills and transferable skills, such as technical knowledge, analysis, communication, documentation, organization, languages, domain knowledge, project experience or customer-facing experience, if present in the CV.
-        - keywords must contain 40 to 60 relevant technical, domain, method, tool, transferable-skill and job-search keywords.
+        - keywords must contain 50 to 60 relevant technical, domain, method, tool, transferable-skill and job-search keywords.
         - keywords should include English and German variants where useful.
         - Prefer concrete skills, technologies, tools, methods, domains and job-search terms.
         - Include German job-search terms that commonly appear in German postings, if relevant, such as "Berufseinsteiger", "Junior", "Trainee", "Einarbeitung", "Weiterbildung" or "Lernbereitschaft".

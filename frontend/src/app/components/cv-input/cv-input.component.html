@@ -3,9 +3,91 @@
     <h1 class="cv-title">CV Analysis</h1>
 
     <p class="cv-description">
-      Paste your CV text below to analyze and extract key information from your career history.
-      We'll help you identify strengths, skills, and opportunities for improvement.
+      Find the best job matches and manage your applications in one place.
     </p>
+
+    <div class="saved-profile-section">
+      <label class="label">Saved Search Profile</label>
+
+      <div class="profile-picker">
+        <button
+          class="profile-picker-trigger"
+          type="button"
+          (click)="toggleProfileDropdown($event)"
+          [disabled]="isLoadingProfiles() || savedProfiles().length === 0"
+          [attr.aria-expanded]="isProfileDropdownOpen()"
+        >
+          <span>{{ selectedProfileLabel() }}</span>
+          <span class="profile-picker-chevron">v</span>
+        </button>
+
+        <div *ngIf="isProfileDropdownOpen()" class="profile-dropdown">
+          <div
+            *ngFor="let profile of savedProfiles()"
+            class="profile-option"
+            [class.selected]="profile.id === selectedProfileId()"
+          >
+            <button
+              class="profile-option-main"
+              type="button"
+              (click)="onSelectSavedProfile(profile.id)"
+            >
+              {{ savedProfileLabel(profile) }}
+            </button>
+            <button
+              class="profile-option-delete"
+              type="button"
+              (click)="openDeleteProfileDialog(profile, $event)"
+              title="Delete profile"
+              aria-label="Delete profile"
+            >
+              x
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="deleteProfileError()" class="inline-error">
+        {{ deleteProfileError() }}
+      </div>
+      <div *ngIf="profileLoadError()" class="inline-error">
+        {{ profileLoadError() }}
+      </div>
+    </div>
+
+    <div *ngIf="profilePendingDeletion()" class="modal-backdrop">
+      <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="deleteProfileTitle">
+        <h2 id="deleteProfileTitle">Delete search profile?</h2>
+        <p>
+          Deleting this profile will remove all profile information and related data,
+          including applications saved in Job Tracker for this profile.
+        </p>
+        <p class="delete-profile-name">{{ savedProfileLabel(profilePendingDeletion()!) }}</p>
+
+        <div *ngIf="deleteProfileError()" class="inline-error">
+          {{ deleteProfileError() }}
+        </div>
+
+        <div class="modal-actions">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="cancelDeleteProfile()"
+            [disabled]="isDeletingProfile()"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-danger"
+            type="button"
+            (click)="confirmDeleteProfile()"
+            [disabled]="isDeletingProfile()"
+          >
+            {{ isDeletingProfile() ? 'Deleting...' : 'Delete profile' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div class="form-group">
       <label for="cvTextarea" class="label">Your CV Text</label>
@@ -66,11 +148,19 @@
       <div class="result-card">
         <h3 class="result-card-title">Suggested Search Roles</h3>
         <ul class="roles-list">
-          <li *ngFor="let role of analysisResult()!.searchRoles" class="role-item">
+          <li *ngFor="let role of visibleSearchRoles()" class="role-item">
             <span class="role-text">{{ role }}</span>
             <button class="remove-btn" (click)="removeSearchRole(role)" title="Remove">✕</button>
           </li>
         </ul>
+        <button
+          *ngIf="hiddenSearchRoleCount() > 0"
+          type="button"
+          class="list-toggle-btn"
+          (click)="toggleSearchRoles()"
+        >
+          {{ showAllSearchRoles() ? 'Show fewer' : 'Show all ' + analysisResult()!.searchRoles.length + ' roles' }}
+        </button>
 
         <div class="add-row">
           <input [ngModel]="newSearchRole()" (ngModelChange)="newSearchRole.set($event)" placeholder="Add search role" class="small-input" />
@@ -82,11 +172,19 @@
       <div class="result-card">
         <h3 class="result-card-title">Alternative Career Directions</h3>
         <ul class="roles-list">
-          <li *ngFor="let role of analysisResult()!.alternativeCareerRoles" class="role-item">
+          <li *ngFor="let role of visibleAlternativeCareerRoles()" class="role-item">
             <span class="role-text">{{ role }}</span>
             <button class="remove-btn" (click)="removeAlternativeCareerRole(role)" title="Remove">✕</button>
           </li>
         </ul>
+        <button
+          *ngIf="hiddenAlternativeRoleCount() > 0"
+          type="button"
+          class="list-toggle-btn"
+          (click)="toggleAlternativeRoles()"
+        >
+          {{ showAllAlternativeRoles() ? 'Show fewer' : 'Show all ' + analysisResult()!.alternativeCareerRoles.length + ' directions' }}
+        </button>
 
         <div class="add-row">
           <input [ngModel]="newAlternativeRole()" (ngModelChange)="newAlternativeRole.set($event)" placeholder="Add alternative role" class="small-input" />
@@ -98,11 +196,19 @@
       <div class="result-card">
         <h3 class="result-card-title">Key Skills & Keywords</h3>
         <div class="keywords-container">
-          <span *ngFor="let keyword of analysisResult()!.keywords" class="keyword-badge">
+          <span *ngFor="let keyword of visibleKeywords()" class="keyword-badge">
             {{ keyword }}
             <button class="chip-remove" (click)="removeKeyword(keyword)" title="Remove">✕</button>
           </span>
         </div>
+        <button
+          *ngIf="hiddenKeywordCount() > 0"
+          type="button"
+          class="list-toggle-btn"
+          (click)="toggleKeywords()"
+        >
+          {{ showAllKeywords() ? 'Show fewer' : 'Show all ' + analysisResult()!.keywords.length + ' keywords' }}
+        </button>
 
         <div class="add-row keywords-add">
           <input [ngModel]="newKeyword()" (ngModelChange)="newKeyword.set($event)" placeholder="Add keyword" class="small-input" />
@@ -111,159 +217,78 @@
       </div>
 
       <div class="generate-row">
-      <!-- Save Search Profile Messages and Button -->
-      <div class="save-section">
-        <div *ngIf="saveError()" class="error-message">
-          <strong>Error:</strong> {{ saveError() }}
+        <!-- Save Search Profile Messages and Buttons -->
+        <div class="save-section">
+          <div *ngIf="saveError()" class="error-message">
+            <strong>Error:</strong> {{ saveError() }}
+          </div>
+
+          <div *ngIf="saveSuccess()" class="success-message">
+            ✓ Search profile saved successfully!
+          </div>
+
+          <div *ngIf="generateError()" class="error-message">
+            <strong>Error:</strong> {{ generateError() }}
+          </div>
+
+          <button
+            class="btn btn-primary save-btn"
+            (click)="onSaveSearchProfile()"
+            [disabled]="!canSaveSearchProfile()"
+            [title]="!canSaveSearchProfile() ? saveDisabledReason() : ''"
+          >
+            <span *ngIf="!isSaving()">Save Search Profile</span>
+            <span *ngIf="isSaving()">Saving...</span>
+          </button>
+
+          <button
+            class="btn btn-primary"
+            (click)="onGenerateSearchQueries()"
+            [disabled]="!canSearchAndRank() || isGenerating()"
+            [title]="!canSearchAndRank() ? searchAndRankDisabledReason() : ''"
+          >
+            <span *ngIf="!isGenerating()">Generate Search Queries</span>
+            <span *ngIf="isGenerating()">Generating...</span>
+          </button>
+
+          <button
+            class="btn btn-primary"
+            (click)="onSearchAndRank()"
+            [disabled]="!canSearchAndRank() || isGenerating()"
+            [title]="!canSearchAndRank() ? searchAndRankDisabledReason() : ''"
+          >
+            <span *ngIf="!isGenerating()">Search Jobs and Rank Matches</span>
+            <span *ngIf="isGenerating()">Generating queries...</span>
+          </button>
+
+          <button
+            class="btn btn-primary"
+            (click)="onOpenJobMatch()"
+            [disabled]="!savedProfileId()"
+            [title]="!savedProfileId() ? 'Please save search profile first' : ''"
+          >
+            Analyze Job Match
+          </button>
+
+          <button
+            class="btn btn-tracker"
+            type="button"
+            (click)="onOpenJobTracker()"
+          >
+            Job Tracker
+          </button>
+
+          <button
+            class="btn btn-history"
+            type="button"
+            (click)="onOpenMatchHistory()"
+            [disabled]="!savedProfileId()"
+            [title]="!savedProfileId() ? 'Please select or save a profile first' : ''"
+          >
+            Match History
+          </button>
         </div>
-
-        <div *ngIf="saveSuccess()" class="success-message">
-          ✓ Search profile saved successfully!
-        </div>
-
-        <div *ngIf="generateError()" class="error-message">
-          <strong>Error:</strong> {{ generateError() }}
-        </div>
-
-        <button
-          class="btn btn-primary save-btn"
-          (click)="onSaveSearchProfile()"
-          [disabled]="isSaving() || !analysisResult()"
-        >
-          <span *ngIf="!isSaving()">Save Search Profile</span>
-          <span *ngIf="isSaving()">Saving...</span>
-        </button>
-
-        <button
-          class="btn btn-primary"
-          (click)="onGenerateSearchQueries()"
-          [disabled]="!savedProfileId() || isGenerating()"
-          [title]="!savedProfileId() ? 'Please save search profile first' : ''"
-        >
-          <span *ngIf="!isGenerating()">Generate Search Queries</span>
-          <span *ngIf="isGenerating()">Generating...</span>
-        </button>
-
-        <button
-          class="btn btn-primary"
-          (click)="onSearchAndRank()"
-          [disabled]="!canSearchAndRank()"
-          [title]="!canSearchAndRank() ? 'Please save search profile and analysis first' : ''"
-        >
-          Search Jobs and Rank Matches
-        </button>
       </div>
-
-        <!-- Job Match Analysis (inside cv card) -->
-        <div class="jobmatch-section" *ngIf="analysisResult()">
-          <h3 class="result-card-title">Analyze Job Match</h3>
-
-          <p class="muted">Paste one or more job descriptions to compare with the saved search profile.</p>
-
-          <div class="jobs-list">
-            <div *ngFor="let job of jobInputs(); let i = index" class="job-input-row">
-              <div class="job-input-header">
-                <h4>Job {{ i + 1 }}</h4>
-
-                <button
-                  *ngIf="jobInputs().length > 1"
-                  type="button"
-                  class="remove-btn"
-                  (click)="removeJobInput(i)"
-                  title="Remove job"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <textarea
-                [ngModel]="job.description"
-                (ngModelChange)="updateJobDescription(i, $event)"
-                rows="6"
-                class="textarea jobmatch-textarea"
-                placeholder="Paste job description here..."
-                [disabled]="isAnalyzing()"
-              ></textarea>
-            </div>
-          </div>
-
-          <div class="add-job-row">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="addJobInput()"
-              [disabled]="isAnalyzing()"
-            >
-              + Add another job
-            </button>
-          </div>
-
-          <div class="jobmatch-actions">
-            <button
-              class="btn btn-primary"
-              (click)="onAnalyzeMatches()"
-              [disabled]="!canAnalyzeMatches()"
-            >
-              <span *ngIf="!isAnalyzing()">Analyze Matches</span>
-              <span *ngIf="isAnalyzing()">Analyzing...</span>
-            </button>
-          </div>
-
-          <div *ngIf="jobMatchError()" class="error-message">
-            <strong>Error:</strong> {{ jobMatchError() }}
-          </div>
-
-          <div class="multi-results" *ngIf="jobMatchResults().length > 0">
-            <div *ngFor="let result of jobMatchResults(); let i = index">
-              <div *ngIf="result" class="analysis-result">
-                <h4>Match Result — Job {{ i + 1 }}</h4>
-
-                <p><strong>Score:</strong> {{ result.matchScore }} / 100</p>
-                <p><strong>Recommendation:</strong> {{ result.recommendation }}</p>
-                <p><strong>Summary:</strong> {{ result.summary }}</p>
-
-                <section>
-                  <h5>Matching Skills</h5>
-                  <ul>
-                    <li *ngFor="let s of result.matchingSkills">{{ s }}</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h5>Missing Skills</h5>
-
-                  <ul *ngIf="result.missingSkills.length; else noMissingSkills">
-                    <li *ngFor="let s of result.missingSkills">{{ s }}</li>
-                  </ul>
-
-                  <ng-template #noMissingSkills>
-                    <p class="empty-result-text">No major missing skills</p>
-                  </ng-template>
-                </section>
-
-                <section>
-                  <h5>Concerns</h5>
-
-                  <ul *ngIf="result.concerns.length; else noConcerns">
-                    <li *ngFor="let c of result.concerns">{{ c }}</li>
-                  </ul>
-
-                  <ng-template #noConcerns>
-                    <p class="empty-result-text">No major concerns</p>
-                  </ng-template>
-                </section>
-
-                <section>
-                  <h5>Suggested Application Focus</h5>
-                  <ul>
-                    <li *ngFor="let f of result.suggestedApplicationFocus">{{ f }}</li>
-                  </ul>
-                </section>
-              </div>
-            </div>
-          </div>
-        </div>
     </div>
   </div>
-</div>
 </div>

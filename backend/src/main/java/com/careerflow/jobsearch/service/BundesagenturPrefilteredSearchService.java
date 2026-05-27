@@ -1,6 +1,9 @@
 package com.careerflow.jobsearch.service;
 
+import com.careerflow.jobsearch.dto.JobPrefilterResult;
 import com.careerflow.jobsearch.dto.JobSearchResult;
+import com.careerflow.jobsearch.dto.ProviderPrefilterStatistics;
+import com.careerflow.jobsearch.dto.ProviderSearchResult;
 import com.careerflow.jobsearch.provider.BundesagenturJobSearchProvider;
 import org.springframework.stereotype.Service;
 
@@ -39,15 +42,73 @@ public class BundesagenturPrefilteredSearchService {
             List<String> keywords,
             int target
     ) {
-        if (target <= 0) {
-            return List.of();
-        }
+        return searchPrefilteredBundesagenturJobs(
+                location,
+                roles,
+                roles,
+                keywords,
+                target
+        );
+    }
 
-        List<String> roleQueries = buildRoleQueries(roles);
+    public List<JobSearchResult> searchPrefilteredBundesagenturJobs(
+            String location,
+            List<String> jobSearchQueries,
+            List<String> roles,
+            List<String> keywords,
+            int target
+    ) {
+        return searchPrefilteredBundesagenturJobsWithStatistics(
+                location,
+                jobSearchQueries,
+                roles,
+                keywords,
+                target
+        ).getJobs();
+    }
+
+    public ProviderSearchResult searchPrefilteredBundesagenturJobsWithStatistics(
+            String location,
+            List<String> jobSearchQueries,
+            List<String> roles,
+            List<String> keywords,
+            int target
+    ) {
+        return searchPrefilteredBundesagenturJobsWithStatistics(
+                location,
+                jobSearchQueries,
+                roles,
+                keywords,
+                target,
+                JobSeniorityPreference.JUNIOR
+        );
+    }
+
+    public ProviderSearchResult searchPrefilteredBundesagenturJobsWithStatistics(
+            String location,
+            List<String> jobSearchQueries,
+            List<String> roles,
+            List<String> keywords,
+            int target,
+            JobSeniorityPreference seniorityPreference
+    ) {
+        List<String> roleQueries = buildRoleQueries(jobSearchQueries);
 
         if (roleQueries.isEmpty()) {
             System.out.println("No Bundesagentur role queries available.");
-            return List.of();
+            return new ProviderSearchResult(
+                    List.of(),
+                    new ProviderPrefilterStatistics(
+                            "Bundesagentur",
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            false,
+                            null
+                    )
+            );
         }
 
         String cacheKey = buildCacheKey(location, roleQueries);
@@ -58,17 +119,29 @@ public class BundesagenturPrefilteredSearchService {
                 roleQueries
         );
 
-        List<JobSearchResult> prefilteredJobs =
-                jobPrefilterService.prefilter(
+        JobPrefilterResult prefilterResult =
+                jobPrefilterService.prefilterWithStatistics(
                         candidates,
                         roles,
                         keywords,
-                        target
+                        seniorityPreference
                 );
+        List<JobSearchResult> prefilteredJobs = prefilterResult.getJobs();
 
         System.out.println("Bundesagentur prefiltered jobs: " + prefilteredJobs.size());
 
-        return prefilteredJobs;
+        ProviderPrefilterStatistics statistics = new ProviderPrefilterStatistics(
+                "Bundesagentur",
+                candidates.size(),
+                candidates.size(),
+                prefilterResult.getAfterSeniorFilterCount(),
+                prefilterResult.getAfterProfileFilterCount(),
+                prefilteredJobs.size(),
+                false,
+                null
+        );
+
+        return new ProviderSearchResult(prefilteredJobs, statistics);
     }
 
     private synchronized List<JobSearchResult> getCachedOrFetchCandidates(

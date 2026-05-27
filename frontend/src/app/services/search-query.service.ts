@@ -17,5 +17,21 @@ export class SearchQueryService {
       {}
     );
   }
+
+  getQueries(profileId: number): Observable<SearchQueryGenerationResponse> {
+    return this.http.get<SearchQueryGenerationResponse>(
+      `${this.apiUrl}/${profileId}/queries`
+    );
+  }
+
+  updateQueries(
+    profileId: number,
+    queries: SearchQueryGenerationResponse
+  ): Observable<SearchQueryGenerationResponse> {
+    return this.http.put<SearchQueryGenerationResponse>(
+      `${this.apiUrl}/${profileId}/queries`,
+      queries
+    );
+  }
 }
 

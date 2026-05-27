@@ -318,21 +318,115 @@ public class ArbeitnowJobSearchProvider {
     }
 
     private List<String> getLocationAliases(String location) {
-        String normalized = normalizeLocation(location);
+        String normalizedLocation = normalizeLocation(location);
 
-        if (normalized.equals("nuernberg") || normalized.equals("nuremberg")) {
-            return List.of("nuernberg", "nuremberg");
+        List<String> aliases = new ArrayList<>();
+        aliases.add(normalizedLocation);
+
+        if (normalizedLocation.equals("nuernberg") || normalizedLocation.equals("nuremberg")) {
+            aliases.add("nuernberg");
+            aliases.add("nuremberg");
         }
 
-        if (normalized.equals("muenchen") || normalized.equals("munich")) {
-            return List.of("muenchen", "munich");
+        if (normalizedLocation.equals("muenchen") || normalizedLocation.equals("munich")) {
+            aliases.add("muenchen");
+            aliases.add("munich");
         }
 
-        if (normalized.equals("koeln") || normalized.equals("cologne")) {
-            return List.of("koeln", "cologne");
+        if (normalizedLocation.equals("koeln") || normalizedLocation.equals("cologne")) {
+            aliases.add("koeln");
+            aliases.add("cologne");
         }
 
-        return List.of(normalized);
+        if (normalizedLocation.equals("duesseldorf") || normalizedLocation.equals("dusseldorf")) {
+            aliases.add("duesseldorf");
+            aliases.add("dusseldorf");
+        }
+
+        if (normalizedLocation.equals("frankfurt am main") || normalizedLocation.equals("frankfurt")) {
+            aliases.add("frankfurt");
+            aliases.add("frankfurt am main");
+        }
+
+        if (normalizedLocation.equals("fuerth") || normalizedLocation.equals("furth")) {
+            aliases.add("fuerth");
+            aliases.add("furth");
+        }
+
+        if (normalizedLocation.equals("hannover") || normalizedLocation.equals("hanover")) {
+            aliases.add("hannover");
+            aliases.add("hanover");
+        }
+
+        if (normalizedLocation.equals("regensburg") || normalizedLocation.equals("ratisbon")) {
+            aliases.add("regensburg");
+            aliases.add("ratisbon");
+        }
+
+        if (normalizedLocation.equals("augsburg")) {
+            aliases.add("augsburg");
+        }
+
+        if (normalizedLocation.equals("wuerzburg") || normalizedLocation.equals("wurzburg")) {
+            aliases.add("wuerzburg");
+            aliases.add("wurzburg");
+        }
+
+        if (normalizedLocation.equals("erlangen")) {
+            aliases.add("erlangen");
+        }
+
+        if (normalizedLocation.equals("stuttgart")) {
+            aliases.add("stuttgart");
+        }
+
+        if (normalizedLocation.equals("berlin")) {
+            aliases.add("berlin");
+        }
+
+        if (normalizedLocation.equals("hamburg")) {
+            aliases.add("hamburg");
+        }
+
+        if (normalizedLocation.equals("leipzig")) {
+            aliases.add("leipzig");
+        }
+
+        if (normalizedLocation.equals("dresden")) {
+            aliases.add("dresden");
+        }
+
+        if (normalizedLocation.equals("bonn")) {
+            aliases.add("bonn");
+        }
+
+        if (normalizedLocation.equals("bremen")) {
+            aliases.add("bremen");
+        }
+
+        if (normalizedLocation.equals("dortmund")) {
+            aliases.add("dortmund");
+        }
+
+        if (normalizedLocation.equals("essen")) {
+            aliases.add("essen");
+        }
+
+        if (normalizedLocation.equals("mannheim")) {
+            aliases.add("mannheim");
+        }
+
+        if (normalizedLocation.equals("karlsruhe")) {
+            aliases.add("karlsruhe");
+        }
+
+        if (normalizedLocation.equals("mainz")) {
+            aliases.add("mainz");
+        }
+
+        return aliases.stream()
+                .distinct()
+                .toList();
     }
 
 }

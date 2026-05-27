@@ -1,0 +1,237 @@
+<div class="tracker-container">
+  <div class="tracker-shell">
+    <div class="tracker-header">
+      <div>
+        <h1 class="tracker-title">Job Tracker</h1>
+        <p class="tracker-description">
+          Track saved vacancies, applications, outcomes, and notes in one working list.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" type="button" (click)="openRanking()">
+          Ranking
+        </button>
+        <button class="btn btn-secondary" type="button" (click)="openHome()">
+          Home
+        </button>
+
+        <div class="profile-filter">
+          <button
+            class="btn btn-secondary profile-filter-trigger"
+            type="button"
+            (click)="toggleProfileDropdown($event)"
+            [attr.aria-expanded]="isProfileDropdownOpen()"
+          >
+            {{ profileFilterLabel() }}
+            <span class="profile-filter-chevron">v</span>
+          </button>
+
+          <div class="profile-filter-menu" *ngIf="isProfileDropdownOpen()">
+            <label class="profile-filter-option all-option">
+              <input
+                type="checkbox"
+                [checked]="isAllProfilesSelected()"
+                (change)="toggleAllProfiles($any($event.target).checked)"
+              />
+              <span>All jobs</span>
+            </label>
+
+            <div class="profile-filter-divider"></div>
+
+            <label class="profile-filter-option">
+              <input
+                type="checkbox"
+                [checked]="isManualSelected()"
+                (change)="toggleManual($any($event.target).checked)"
+              />
+              <span>Manual</span>
+            </label>
+
+            <label class="profile-filter-option" *ngFor="let profile of savedProfiles()">
+              <input
+                type="checkbox"
+                [checked]="isProfileSelected(profile.id)"
+                (change)="toggleProfile(profile.id, $any($event.target).checked)"
+              />
+              <span>{{ savedProfileLabel(profile) }}</span>
+            </label>
+
+            <p class="profile-filter-empty" *ngIf="savedProfiles().length === 0">
+              No saved profiles yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="manual-add-section">
+      <div class="manual-add-grid">
+        <input
+          class="manual-input"
+          type="text"
+          [ngModel]="newCompany()"
+          (ngModelChange)="newCompany.set($event)"
+          placeholder="Company"
+        />
+        <input
+          class="manual-input"
+          type="text"
+          [ngModel]="newPositionTitle()"
+          (ngModelChange)="newPositionTitle.set($event)"
+          placeholder="Position"
+        />
+        <input
+          class="manual-input"
+          type="text"
+          [ngModel]="newLocation()"
+          (ngModelChange)="newLocation.set($event)"
+          placeholder="Location"
+        />
+        <input
+          class="manual-input"
+          type="url"
+          [ngModel]="newJobUrl()"
+          (ngModelChange)="newJobUrl.set($event)"
+          placeholder="Link"
+        />
+        <input
+          class="manual-input"
+          type="text"
+          [ngModel]="newNotes()"
+          (ngModelChange)="newNotes.set($event)"
+          placeholder="Notes"
+        />
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="addManualJob()"
+          [disabled]="isAddingJob()"
+        >
+          {{ isAddingJob() ? 'Adding...' : 'Add job' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input
+        class="search-input"
+        type="text"
+        [ngModel]="searchText()"
+        (ngModelChange)="searchText.set($event)"
+        placeholder="Search company, position, location"
+      />
+
+      <select
+        class="status-filter"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+      >
+        <option value="ALL">All statuses</option>
+        <option *ngFor="let status of statuses" [ngValue]="status">
+          {{ statusLabel(status) }}
+        </option>
+      </select>
+    </div>
+
+    <div class="message error-message" *ngIf="error()">
+      {{ error() }}
+    </div>
+
+    <div class="message error-message" *ngIf="profileLoadError()">
+      {{ profileLoadError() }}
+    </div>
+
+    <div class="message" *ngIf="isLoading()">
+      Loading tracked jobs...
+    </div>
+
+    <div class="table-wrap" *ngIf="!isLoading()">
+      <table class="tracker-table">
+        <thead>
+          <tr>
+            <th *ngIf="showProfileColumn()">Profile</th>
+            <th>Company</th>
+            <th>Position</th>
+            <th>Location</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Match</th>
+            <th>Link</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let job of filteredJobs()">
+            <td *ngIf="showProfileColumn()" class="profile-cell">
+              {{ profileColumnLabel(job.searchProfileId) }}
+            </td>
+            <td>{{ job.company }}</td>
+            <td>{{ job.positionTitle }}</td>
+            <td>{{ job.location || '-' }}</td>
+            <td>
+              <input
+                class="date-input"
+                type="date"
+                [ngModel]="job.appliedDate"
+                (change)="updateAppliedDate(job, $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <select
+                class="cell-select status-select"
+                [ngClass]="statusClass(job.status)"
+                [ngModel]="job.status"
+                (ngModelChange)="updateStatus(job, $event)"
+              >
+                <option *ngFor="let status of statuses" [ngValue]="status">
+                  {{ statusLabel(status) }}
+                </option>
+              </select>
+            </td>
+            <td>
+              <span *ngIf="job.matchScore !== null" class="score">{{ job.matchScore }}%</span>
+              <span *ngIf="job.matchScore === null">-</span>
+            </td>
+            <td>
+              <input
+                class="link-input"
+                type="url"
+                [ngModel]="job.jobUrl"
+                (change)="updateJobUrl(job, $any($event.target).value)"
+                placeholder="Add link"
+              />
+              <a
+                *ngIf="job.jobUrl"
+                class="table-link"
+                [href]="job.jobUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open
+              </a>
+            </td>
+            <td>
+              <textarea
+                class="notes-input"
+                [ngModel]="job.notes"
+                (change)="updateNotes(job, $any($event.target).value)"
+                placeholder="Notes"
+              ></textarea>
+            </td>
+            <td>
+              <button class="icon-btn" type="button" title="Delete" (click)="deleteJob(job)">
+                x
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredJobs().length === 0">
+            <td [attr.colspan]="showProfileColumn() ? 10 : 9" class="empty-cell">
+              No tracked jobs match the selected filters.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

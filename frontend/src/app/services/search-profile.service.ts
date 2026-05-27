@@ -19,5 +19,17 @@ export class SearchProfileService {
   createSearchProfile(request: SearchProfileCreateRequest): Observable<SearchProfileResponse> {
     return this.http.post<SearchProfileResponse>(this.apiUrl, request);
   }
+
+  getSearchProfiles(): Observable<SearchProfileResponse[]> {
+    return this.http.get<SearchProfileResponse[]>(this.apiUrl);
+  }
+
+  getSearchProfile(id: number): Observable<SearchProfileResponse> {
+    return this.http.get<SearchProfileResponse>(`${this.apiUrl}/${id}`);
+  }
+
+  deleteSearchProfile(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
 }
 

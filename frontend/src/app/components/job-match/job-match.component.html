@@ -1,10 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<div class="jobmatch-container">
+  <div class="jobmatch-card">
+    <h1 class="jobmatch-title">Analyze Job Match</h1>
+
+    <p class="jobmatch-description">
+      Paste one or more job descriptions to compare them with your saved search profile.
+    </p>
+
+    <div *ngIf="!savedProfileId()" class="error-message">
+      Please save a search profile before analyzing job matches.
+    </div>
+
+    <div class="jobs-list">
+      <div *ngFor="let job of jobInputs(); let i = index" class="job-input-row">
+        <div class="job-input-header">
+          <h3>Job {{ i + 1 }}</h3>
+
+          <button
+            *ngIf="jobInputs().length > 1"
+            type="button"
+            class="remove-btn"
+            (click)="removeJobInput(i)"
+            title="Remove job"
+          >
+            ✕
+          </button>
+        </div>
+
+        <textarea
+          [ngModel]="job.description"
+          (ngModelChange)="updateJobDescription(i, $event)"
+          rows="8"
+          class="textarea"
+          placeholder="Paste job description here..."
+          [disabled]="isAnalyzing()"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="addJobInput()"
+        [disabled]="isAnalyzing()"
+      >
+        + Add another job
+      </button>
+
+      <button
+        class="btn btn-primary"
+        (click)="onAnalyzeMatches()"
+        [disabled]="!canAnalyzeMatches()"
+      >
+        <span *ngIf="!isAnalyzing()">Analyze Matches</span>
+        <span *ngIf="isAnalyzing()">Analyzing...</span>
+      </button>
+    </div>
+
+    <div *ngIf="jobMatchError()" class="error-message">
+      <strong>Error:</strong> {{ jobMatchError() }}
+    </div>
+
+    <div class="multi-results" *ngIf="jobMatchResults().length > 0">
+      <div *ngFor="let result of jobMatchResults(); let i = index">
+        <div *ngIf="result" class="analysis-result">
+          <h3>Match Result — Job {{ i + 1 }}</h3>
+
+          <p><strong>Score:</strong> {{ result.matchScore }} / 100</p>
+          <p><strong>Recommendation:</strong> {{ result.recommendation }}</p>
+          <p><strong>Summary:</strong> {{ result.summary }}</p>
+
+          <section>
+            <h4>Matching Skills</h4>
+            <ul>
+              <li *ngFor="let skill of result.matchingSkills">
+                {{ skill }}
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h4>Missing Skills</h4>
+
+            <ul *ngIf="result.missingSkills.length; else noMissingSkills">
+              <li *ngFor="let skill of result.missingSkills">
+                {{ skill }}
+              </li>
+            </ul>
+
+            <ng-template #noMissingSkills>
+              <p class="empty-result-text">No major missing skills</p>
+            </ng-template>
+          </section>
+
+          <section>
+            <h4>Concerns</h4>
+
+            <ul *ngIf="result.concerns.length; else noConcerns">
+              <li *ngFor="let concern of result.concerns">
+                {{ concern }}
+              </li>
+            </ul>
+
+            <ng-template #noConcerns>
+              <p class="empty-result-text">No major concerns</p>
+            </ng-template>
+          </section>
+
+          <section>
+            <h4>Suggested Application Focus</h4>
+            <ul>
+              <li *ngFor="let focus of result.suggestedApplicationFocus">
+                {{ focus }}
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-group bottom-actions">
+      <button class="btn btn-secondary" (click)="goBack()">
+        Back to Home
+      </button>
+    </div>
+  </div>
+</div>

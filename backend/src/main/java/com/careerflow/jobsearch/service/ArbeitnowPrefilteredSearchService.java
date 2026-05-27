@@ -1,6 +1,9 @@
 package com.careerflow.jobsearch.service;
 
+import com.careerflow.jobsearch.dto.JobPrefilterResult;
 import com.careerflow.jobsearch.dto.JobSearchResult;
+import com.careerflow.jobsearch.dto.ProviderPrefilterStatistics;
+import com.careerflow.jobsearch.dto.ProviderSearchResult;
 import com.careerflow.jobsearch.provider.ArbeitnowJobSearchProvider;
 import org.springframework.stereotype.Service;
 
@@ -96,8 +99,50 @@ public class ArbeitnowPrefilteredSearchService {
             List<String> keywords,
             int target
     ) {
+        return searchPrefilteredArbeitnowJobsWithStatistics(
+                location,
+                roles,
+                keywords,
+                target
+        ).getJobs();
+    }
+
+    public ProviderSearchResult searchPrefilteredArbeitnowJobsWithStatistics(
+            String location,
+            List<String> roles,
+            List<String> keywords,
+            int target
+    ) {
+        return searchPrefilteredArbeitnowJobsWithStatistics(
+                location,
+                roles,
+                keywords,
+                target,
+                JobSeniorityPreference.JUNIOR
+        );
+    }
+
+    public ProviderSearchResult searchPrefilteredArbeitnowJobsWithStatistics(
+            String location,
+            List<String> roles,
+            List<String> keywords,
+            int target,
+            JobSeniorityPreference seniorityPreference
+    ) {
         if (target <= 0) {
-            return List.of();
+            return new ProviderSearchResult(
+                    List.of(),
+                    new ProviderPrefilterStatistics(
+                            "Arbeitnow",
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            false,
+                            null
+                    )
+            );
         }
 
         System.out.println("========== ARBEITNOW PROFILE PREFILTER SEARCH ==========");
@@ -108,16 +153,20 @@ public class ArbeitnowPrefilteredSearchService {
         System.out.println("Page batch size: " + PAGE_BATCH_SIZE);
         System.out.println("========================================================");
 
+        List<JobSearchResult> cachedJobs = arbeitnowProvider.getCachedJobResults();
+
         List<JobSearchResult> locationFilteredJobs =
                 arbeitnowProvider.filterCachedJobsByLocation(location);
 
-        List<JobSearchResult> prefilteredJobs =
-                jobPrefilterService.prefilter(
+        JobPrefilterResult prefilterResult =
+                jobPrefilterService.prefilterWithStatistics(
                         locationFilteredJobs,
                         roles,
                         keywords,
-                        target
+                        target,
+                        seniorityPreference
                 );
+        List<JobSearchResult> prefilteredJobs = prefilterResult.getJobs();
 
         System.out.println("Initial location-filtered jobs: " + locationFilteredJobs.size());
         System.out.println("Initial profile-prefiltered jobs: " + prefilteredJobs.size());
@@ -139,13 +188,15 @@ public class ArbeitnowPrefilteredSearchService {
             locationFilteredJobs =
                     arbeitnowProvider.filterCachedJobsByLocation(location);
 
-            prefilteredJobs =
-                    jobPrefilterService.prefilter(
+            prefilterResult =
+                    jobPrefilterService.prefilterWithStatistics(
                             locationFilteredJobs,
                             roles,
                             keywords,
-                            target
+                            target,
+                            seniorityPreference
                     );
+            prefilteredJobs = prefilterResult.getJobs();
 
             System.out.println("Location-filtered jobs after new batch: " + locationFilteredJobs.size());
             System.out.println("Profile-prefiltered jobs after new batch: " + prefilteredJobs.size());
@@ -155,6 +206,22 @@ public class ArbeitnowPrefilteredSearchService {
         System.out.println("Returned final matches: " + prefilteredJobs.size());
         System.out.println("========================================================");
 
-        return prefilteredJobs;
+        int cachedCandidateCount = Math.max(
+                cachedJobs.size(),
+                arbeitnowProvider.getCachedJobResults().size()
+        );
+
+        ProviderPrefilterStatistics statistics = new ProviderPrefilterStatistics(
+                "Arbeitnow",
+                cachedCandidateCount,
+                locationFilteredJobs.size(),
+                prefilterResult.getAfterSeniorFilterCount(),
+                prefilterResult.getAfterProfileFilterCount(),
+                prefilteredJobs.size(),
+                false,
+                null
+        );
+
+        return new ProviderSearchResult(prefilteredJobs, statistics);
     }
 }

@@ -1,55 +1,55 @@
 package com.careerflow.jobsearch.controller;
 
-import com.careerflow.jobsearch.provider.AdzunaJobSearchProvider;
-import com.careerflow.jobsearch.provider.BundesagenturJobSearchProvider;
-import com.careerflow.jobsearch.provider.JoobleJobSearchProvider;
+import com.careerflow.jobsearch.dto.JobSearchResult;
 import com.careerflow.jobsearch.provider.ArbeitnowJobSearchProvider;
+import com.careerflow.jobsearch.provider.BundesagenturJobSearchProvider;
+import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
+import com.careerflow.jobsearch.service.ArbeitnowPrefilteredSearchService;
 import com.careerflow.jobsearch.service.JobPrefilterService;
+import com.careerflow.jobsearch.service.JobSeniorityPreference;
+import com.careerflow.jobsearch.service.MultiProviderPrefilteredJobSearchService;
+import com.careerflow.querygeneration.service.SearchQueryGenerationService;
+import com.careerflow.searchprofile.entity.SearchProfile;
+import com.careerflow.searchprofile.service.SearchProfileService;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.careerflow.jobsearch.provider.RemotiveJobSearchProvider;
-import com.careerflow.jobsearch.dto.JobSearchResult;
-import java.util.List;
-import org.springframework.http.MediaType;
-import com.careerflow.jobsearch.service.ArbeitnowPrefilteredSearchService;
-import com.careerflow.jobsearch.dto.RankedJobSearchResult;
-import com.careerflow.jobsearch.service.JobMatchRankingService;
-import com.careerflow.searchprofile.entity.SearchProfile;
-import com.careerflow.searchprofile.service.SearchProfileService;
-import com.careerflow.jobsearch.service.MultiProviderPrefilteredJobSearchService;
 
 @RestController
 public class JobSearchTestController {
 
     private final BundesagenturJobSearchProvider bundesagenturProvider;
-    private final AdzunaJobSearchProvider adzunaProvider;
-    private final JoobleJobSearchProvider joobleProvider;
     private final ArbeitnowJobSearchProvider arbeitnowProvider;
     private final RemotiveJobSearchProvider remotiveProvider;
     private final JobPrefilterService jobPrefilterService;
     private final ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService;
     private final SearchProfileService searchProfileService;
-    private final JobMatchRankingService jobMatchRankingService;
     private final MultiProviderPrefilteredJobSearchService multiProviderPrefilteredJobSearchService;
+    private final SearchQueryGenerationService searchQueryGenerationService;
 
     public JobSearchTestController(
             BundesagenturJobSearchProvider bundesagenturProvider,
-            AdzunaJobSearchProvider adzunaProvider,
-            JoobleJobSearchProvider joobleProvider,
             ArbeitnowJobSearchProvider arbeitnowProvider,
             RemotiveJobSearchProvider remotiveProvider,
-            JobPrefilterService jobPrefilterService, ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService, SearchProfileService searchProfileService, JobMatchRankingService jobMatchRankingService, MultiProviderPrefilteredJobSearchService multiProviderPrefilteredJobSearchService) {
+            JobPrefilterService jobPrefilterService,
+            ArbeitnowPrefilteredSearchService arbeitnowPrefilteredSearchService,
+            SearchProfileService searchProfileService,
+            MultiProviderPrefilteredJobSearchService multiProviderPrefilteredJobSearchService,
+            SearchQueryGenerationService searchQueryGenerationService
+    ) {
         this.bundesagenturProvider = bundesagenturProvider;
-        this.adzunaProvider = adzunaProvider;
-        this.joobleProvider = joobleProvider;
         this.arbeitnowProvider = arbeitnowProvider;
         this.remotiveProvider = remotiveProvider;
         this.jobPrefilterService = jobPrefilterService;
         this.arbeitnowPrefilteredSearchService = arbeitnowPrefilteredSearchService;
         this.searchProfileService = searchProfileService;
-        this.jobMatchRankingService = jobMatchRankingService;
         this.multiProviderPrefilteredJobSearchService = multiProviderPrefilteredJobSearchService;
+        this.searchQueryGenerationService = searchQueryGenerationService;
     }
 
     @GetMapping(
@@ -77,57 +77,6 @@ public class JobSearchTestController {
     ) {
         return remotiveProvider.searchJobs(query, limit);
     }
-/*
-    @GetMapping(
-            value = "/api/job-search/test/arbeitnow/ranked",
-            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
-    )
-    public List<RankedJobSearchResult> testArbeitnowRanked(
-            @RequestParam Long profileId,
-            @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "10") int target
-    ) {
-        SearchProfile profile =
-                searchProfileService.getSearchProfileEntityById(profileId);
-
-        List<JobSearchResult> prefilteredJobs =
-                arbeitnowPrefilteredSearchService.searchPrefilteredArbeitnowJobs(
-                        location,
-                        profile.getSearchRoles(),
-                        profile.getKeywords(),
-                        target
-                );
-
-        return jobMatchRankingService.rankJobs(profile, prefilteredJobs);
-    }*/
-
-    @GetMapping(
-            value = "/api/job-search/test/arbeitnow/ranked",
-            produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
-    )
-    public List<RankedJobSearchResult> testArbeitnowRanked(
-            @RequestParam Long profileId,
-            @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "10") int target
-    ) {
-        SearchProfile profile =
-                searchProfileService.getSearchProfileEntityById(profileId);
-
-        List<JobSearchResult> prefilteredJobs =
-                multiProviderPrefilteredJobSearchService.searchPrefilteredJobs(
-                        location,
-                        profile.getSearchRoles(),
-                        profile.getKeywords(),
-                        target
-                );
-
-        return jobMatchRankingService.rankJobs(
-                profile,
-                prefilteredJobs,
-                target
-        );
-    }
-
     @GetMapping(
             value = "/api/job-search/test/prefiltered",
             produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8"
@@ -135,16 +84,30 @@ public class JobSearchTestController {
     public List<JobSearchResult> testMultiProviderPrefiltered(
             @RequestParam Long profileId,
             @RequestParam(required = false) String location,
-            @RequestParam(defaultValue = "10") int target
+            @RequestParam(required = false) Integer targetPerProvider,
+            @RequestParam(required = false) Integer target,
+            @RequestParam(required = false) String jobLevel
     ) {
         SearchProfile profile =
                 searchProfileService.getSearchProfileEntityById(profileId);
 
+        int resolvedTargetPerProvider = resolveTargetPerProvider(
+                targetPerProvider,
+                target
+        );
+
+        List<String> jobSearchQueries = buildJobSearchQueries(
+                profile.getSearchRoles(),
+                searchQueryGenerationService.getSavedJobSearchQueriesForProfile(profileId)
+        );
+
         return multiProviderPrefilteredJobSearchService.searchPrefilteredJobs(
                 location,
+                jobSearchQueries,
                 profile.getSearchRoles(),
                 profile.getKeywords(),
-                target
+                resolvedTargetPerProvider,
+                JobSeniorityPreference.from(jobLevel)
         );
     }
 
@@ -201,21 +164,45 @@ public class JobSearchTestController {
         return remotiveProvider.searchJobResults(query, limit);
     }
 
-    @GetMapping("/api/job-search/test/adzuna")
-    public String testAdzunaSearch(
-            @RequestParam String query,
-            @RequestParam String location
+    private List<String> buildJobSearchQueries(
+            List<String> profileRoles,
+            List<String> savedGeneratedQueries
     ) {
-        return adzunaProvider.searchJobs(query, location, 1, 5);
+        Set<String> queries = new LinkedHashSet<>();
+
+        addQueries(queries, profileRoles);
+        addQueries(queries, savedGeneratedQueries);
+
+        return new ArrayList<>(queries);
     }
 
-    @GetMapping("/api/job-search/test/jooble")
-    public String testJoobleSearch(
-            @RequestParam String query,
-            @RequestParam String location,
-            @RequestParam(defaultValue = "1") int page
+    private int resolveTargetPerProvider(
+            Integer targetPerProvider,
+            Integer legacyTarget
     ) {
-        return joobleProvider.searchJobs(query, location, page);
+        if (targetPerProvider != null && targetPerProvider > 0) {
+            return targetPerProvider;
+        }
+
+        if (legacyTarget != null && legacyTarget > 0) {
+            return legacyTarget;
+        }
+
+        return 25;
+    }
+
+    private void addQueries(Set<String> queries, List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return;
+        }
+
+        for (String value : values) {
+            if (value == null || value.isBlank()) {
+                continue;
+            }
+
+            queries.add(value.trim());
+        }
     }
 
 }

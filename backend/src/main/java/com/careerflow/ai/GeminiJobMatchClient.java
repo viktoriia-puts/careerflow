@@ -90,6 +90,8 @@ public class GeminiJobMatchClient {
                 - suggestedApplicationFocus should contain 3-5 items.
                 - Do not invent matching skills.
                 - Do not invent missing skills.
+                - If the job description contains only a title, company, profession, and location without concrete responsibilities or requirements, be conservative and do not assign a Strong match.
+                - If key requirements are missing from the job description, cap matchScore at 80 even when the title looks relevant.
                 - Be realistic and objective.
                 - Return only JSON.
                 """.formatted(

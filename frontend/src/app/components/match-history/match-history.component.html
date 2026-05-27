@@ -1,0 +1,167 @@
+<div class="history-container">
+  <div class="history-card">
+    <div class="history-header">
+      <div>
+        <h1 class="history-title">Match History</h1>
+        <p class="history-description">
+          Previously generated ranked matches are saved here by date. Saved matches are not suggested again in Job Search Ranking.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" type="button" (click)="openRanking()">Ranking</button>
+        <button class="btn btn-secondary" type="button" (click)="openJobTracker()">Job Tracker</button>
+        <button class="btn btn-secondary" type="button" (click)="openHome()">Back to Home</button>
+      </div>
+    </div>
+
+    <div *ngIf="error()" class="message error-message">
+      {{ error() }}
+    </div>
+
+    <div *ngIf="trackerMessage()" class="message tracker-message">
+      {{ trackerMessage() }}
+    </div>
+
+    <div *ngIf="trackerError()" class="message error-message">
+      {{ trackerError() }}
+    </div>
+
+    <div *ngIf="isLoadingRuns()" class="message info-message">
+      Loading match history...
+    </div>
+
+    <div *ngIf="!isLoadingRuns() && runs().length === 0 && !error()" class="empty-state">
+      <h2>No match history yet</h2>
+      <p>Run job search ranking first. Generated matches will appear here automatically.</p>
+    </div>
+
+    <div *ngIf="runs().length > 0" class="history-layout">
+      <aside class="run-list">
+        <button
+          *ngFor="let run of runs()"
+          class="run-item"
+          type="button"
+          [class.selected]="selectedRun()?.id === run.id"
+          (click)="selectRun(run.id)"
+        >
+          <span class="run-date">{{ formatRunDate(run.createdAt) }}</span>
+          <span class="run-meta">
+            {{ run.location || 'No location' }} · {{ run.resultCount }} matches
+          </span>
+          <span *ngIf="run.topMatchScore !== null" class="run-score">
+            Top {{ run.topMatchScore }}%
+          </span>
+        </button>
+      </aside>
+
+      <section class="run-detail">
+        <div *ngIf="isLoadingRun()" class="message info-message">
+          Loading selected match list...
+        </div>
+
+        <ng-container *ngIf="!isLoadingRun() && selectedRun() as run">
+          <div class="run-detail-header">
+            <h2>{{ formatRunDate(run.createdAt) }}</h2>
+            <p>{{ run.location || 'No location' }} · {{ run.results.length }} matches</p>
+          </div>
+
+          <div *ngIf="run.results.length === 0" class="empty-state compact">
+            <h2>All matches removed</h2>
+            <p>This saved run has no visible matches left.</p>
+          </div>
+
+          <div class="job-result-card" *ngFor="let result of run.results; let i = index">
+            <div class="job-result-header">
+              <div>
+                <h3 class="job-title">#{{ i + 1 }} {{ result.job.title }}</h3>
+                <p class="job-company">
+                  {{ result.job.company }} · {{ result.job.location }}
+                </p>
+                <span class="provider-badge">
+                  {{ formatProviderName(result.job.source) }}
+                </span>
+              </div>
+
+              <div class="match-badge">
+                {{ result.matchAnalysis.matchScore }}%
+              </div>
+            </div>
+
+            <div class="recommendation-row">
+              {{ result.matchAnalysis.recommendation }}
+            </div>
+
+            <p class="job-summary">
+              {{ result.matchAnalysis.summary }}
+            </p>
+
+            <div class="match-section" *ngIf="result.matchAnalysis.matchingSkills.length">
+              <h4>Matching skills</h4>
+              <div class="tag-list">
+                <span class="match-tag" *ngFor="let skill of result.matchAnalysis.matchingSkills">
+                  {{ skill }}
+                </span>
+              </div>
+            </div>
+
+            <div class="match-section" *ngIf="result.matchAnalysis.missingSkills.length">
+              <h4>Missing skills</h4>
+              <div class="tag-list">
+                <span class="missing-tag" *ngFor="let skill of result.matchAnalysis.missingSkills">
+                  {{ skill }}
+                </span>
+              </div>
+            </div>
+
+            <div class="match-section" *ngIf="result.matchAnalysis.concerns.length">
+              <h4>Concerns</h4>
+              <ul class="text-list">
+                <li *ngFor="let concern of result.matchAnalysis.concerns">
+                  {{ concern }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="match-section" *ngIf="result.matchAnalysis.suggestedApplicationFocus.length">
+              <h4>Suggested application focus</h4>
+              <ul class="text-list">
+                <li *ngFor="let focus of result.matchAnalysis.suggestedApplicationFocus">
+                  {{ focus }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="result-actions">
+              <a
+                *ngIf="result.job.url && result.job.url.trim().length > 0"
+                class="job-link"
+                [href]="result.job.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open job posting
+              </a>
+
+              <button
+                class="tracker-add-btn"
+                type="button"
+                (click)="addToTracker(result)"
+                [disabled]="isTracked(result)"
+              >
+                {{ isTracked(result) ? 'Saved in tracker' : 'Add to tracker' }}
+              </button>
+
+              <button
+                class="remove-history-btn"
+                type="button"
+                (click)="removeFromHistory(result)"
+              >
+                Remove from history
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </section>
+    </div>
+  </div>
+</div>

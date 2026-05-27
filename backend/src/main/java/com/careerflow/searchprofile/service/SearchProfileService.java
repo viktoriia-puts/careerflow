@@ -6,8 +6,11 @@ import com.careerflow.searchprofile.entity.SearchProfile;
 import com.careerflow.searchprofile.repository.SearchProfileRepository;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class SearchProfileService {
@@ -42,6 +45,24 @@ public class SearchProfileService {
     }
 
     @Transactional(readOnly = true)
+    public List<SearchProfileResponse> getSearchProfiles() {
+        return repository.findAll().stream()
+                .sorted(Comparator.comparing(this::createdAtOrMin).reversed())
+                .map(profile -> {
+                    profile.getSearchRoles().size();
+                    profile.getAlternativeCareerRoles().size();
+                    profile.getKeywords().size();
+                    return mapToResponse(profile);
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SearchProfileResponse getSearchProfile(Long id) {
+        return mapToResponse(getSearchProfileEntityById(id));
+    }
+
+    @Transactional(readOnly = true)
     public SearchProfile getSearchProfileEntityById(Long id) {
         SearchProfile profile = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -53,6 +74,17 @@ public class SearchProfileService {
         profile.getKeywords().size();
 
         return profile;
+    }
+
+    @Transactional
+    public void deleteSearchProfile(Long id) {
+        if (!repository.existsById(id)) {
+            throw new EntityNotFoundException(
+                    "Search profile not found with id: " + id
+            );
+        }
+
+        repository.deleteById(id);
     }
 
     /**
@@ -70,6 +102,14 @@ public class SearchProfileService {
                 profile.getKeywords(),
                 profile.getCreatedAt()
         );
+    }
+
+    private LocalDateTime createdAtOrMin(SearchProfile profile) {
+        if (profile.getCreatedAt() == null) {
+            return LocalDateTime.MIN;
+        }
+
+        return profile.getCreatedAt();
     }
 
 }

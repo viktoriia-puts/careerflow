@@ -5,7 +5,9 @@ import { JobMatchAnalysisResponse } from '../models/job-match.model';
 
 @Injectable({ providedIn: 'root' })
 export class SearchQueryStateService {
-  // CV Analysis page state
+  private readonly selectedProfileIdStorageKey = 'careerflow.selectedProfileId';
+  private readonly jobSearchLocationStorageKey = 'careerflow.jobSearchLocation';
+
   private cvText: string = '';
   private analysisResult: CvAnalysisResponse | null = null;
   private cleanedAnalysis: CvAnalysisResponse | null = null;
@@ -13,15 +15,16 @@ export class SearchQueryStateService {
   private savedProfileId: number | null = null;
   private saveSuccess: boolean = false;
 
-  // Job match state
   private jobInputs: { id: number; description: string }[] = [{ id: 1, description: '' }];
   private jobMatchResults: (JobMatchAnalysisResponse | null)[] = [];
 
-  // Job search ranking state
-  private jobSearchLocation: string = 'Nürnberg';
+  private jobSearchLocation: string = 'N\u00fcrnberg';
   private includeRemote: boolean = true;
 
-  // CV text persistence
+  clearRankedJobs(): void {
+    // Ranked jobs are persisted in Match History and reloaded from the backend.
+  }
+
   setCvText(text: string) {
     this.cvText = text;
   }
@@ -30,77 +33,70 @@ export class SearchQueryStateService {
     return this.cvText;
   }
 
-  // Analysis result persistence
   setAnalysisResult(data: CvAnalysisResponse | null) {
     if (!data) {
       this.analysisResult = null;
       return;
     }
-    this.analysisResult = {
-      summary: data.summary,
-      searchRoles: [...data.searchRoles],
-      alternativeCareerRoles: [...data.alternativeCareerRoles],
-      keywords: [...data.keywords]
-    };
+
+    this.analysisResult = this.copyAnalysis(data);
   }
 
   getAnalysisResult(): CvAnalysisResponse | null {
-    if (!this.analysisResult) return null;
-    return {
-      summary: this.analysisResult.summary,
-      searchRoles: [...this.analysisResult.searchRoles],
-      alternativeCareerRoles: [...this.analysisResult.alternativeCareerRoles],
-      keywords: [...this.analysisResult.keywords]
-    };
+    return this.analysisResult ? this.copyAnalysis(this.analysisResult) : null;
   }
 
   setCleanedAnalysis(data: CvAnalysisResponse) {
-    // store a copy
-    this.cleanedAnalysis = {
-      summary: data.summary,
-      searchRoles: [...data.searchRoles],
-      alternativeCareerRoles: [...data.alternativeCareerRoles],
-      keywords: [...data.keywords]
-    };
+    this.cleanedAnalysis = this.copyAnalysis(data);
   }
 
   getCleanedAnalysis(): CvAnalysisResponse | null {
-    if (!this.cleanedAnalysis) return null;
-    return {
-      summary: this.cleanedAnalysis.summary,
-      searchRoles: [...this.cleanedAnalysis.searchRoles],
-      alternativeCareerRoles: [...this.cleanedAnalysis.alternativeCareerRoles],
-      keywords: [...this.cleanedAnalysis.keywords]
-    };
+    return this.cleanedAnalysis ? this.copyAnalysis(this.cleanedAnalysis) : null;
   }
 
   setGeneratedQueries(data: SearchQueryGenerationResponse) {
-    // store a copy
-    this.generatedQueries = {
-      roleTitleQueries: [...data.roleTitleQueries],
-      requirementBasedQueries: [...data.requirementBasedQueries],
-      alternativeDirectionQueries: [...data.alternativeDirectionQueries]
-    };
+    this.generatedQueries = this.copyQueries(data);
+  }
+
+  clearGeneratedQueries(): void {
+    this.generatedQueries = null;
+  }
+
+  getGeneratedQueries(): SearchQueryGenerationResponse | null {
+    return this.generatedQueries ? this.copyQueries(this.generatedQueries) : null;
   }
 
   setSavedProfileId(id: number | null) {
     this.savedProfileId = id;
+
+    if (id === null) {
+      this.removeStoredValue(this.selectedProfileIdStorageKey);
+      return;
+    }
+
+    this.setStoredValue(this.selectedProfileIdStorageKey, id.toString());
   }
 
   getSavedProfileId(): number | null {
-    return this.savedProfileId;
+    if (this.savedProfileId !== null) {
+      return this.savedProfileId;
+    }
+
+    const storedValue = this.getStoredValue(this.selectedProfileIdStorageKey);
+    if (!storedValue) {
+      return null;
+    }
+
+    const parsedValue = Number(storedValue);
+    if (!Number.isFinite(parsedValue)) {
+      this.removeStoredValue(this.selectedProfileIdStorageKey);
+      return null;
+    }
+
+    this.savedProfileId = parsedValue;
+    return parsedValue;
   }
 
-  getGeneratedQueries(): SearchQueryGenerationResponse | null {
-    if (!this.generatedQueries) return null;
-    return {
-      roleTitleQueries: [...this.generatedQueries.roleTitleQueries],
-      requirementBasedQueries: [...this.generatedQueries.requirementBasedQueries],
-      alternativeDirectionQueries: [...this.generatedQueries.alternativeDirectionQueries]
-    };
-  }
-
-  // Save success state
   setSaveSuccess(success: boolean) {
     this.saveSuccess = success;
   }
@@ -109,29 +105,34 @@ export class SearchQueryStateService {
     return this.saveSuccess;
   }
 
-  // Job match state
   setJobInputs(inputs: { id: number; description: string }[]) {
-    this.jobInputs = inputs.map(j => ({ ...j }));
+    this.jobInputs = inputs.map(jobInput => ({ ...jobInput }));
   }
 
   getJobInputs(): { id: number; description: string }[] {
-    return this.jobInputs.map(j => ({ ...j }));
+    return this.jobInputs.map(jobInput => ({ ...jobInput }));
   }
 
   setJobMatchResults(results: (JobMatchAnalysisResponse | null)[]) {
-    this.jobMatchResults = results.map(r => r ? { ...r } : null);
+    this.jobMatchResults = results.map(result => result ? { ...result } : null);
   }
 
   getJobMatchResults(): (JobMatchAnalysisResponse | null)[] {
-    return this.jobMatchResults.map(r => r ? { ...r } : null);
+    return this.jobMatchResults.map(result => result ? { ...result } : null);
   }
 
-  // Job search ranking state
   setJobSearchLocation(location: string) {
-    this.jobSearchLocation = location;
+    const normalizedLocation = location?.trim() || 'N\u00fcrnberg';
+    this.jobSearchLocation = normalizedLocation;
+    this.setStoredValue(this.jobSearchLocationStorageKey, normalizedLocation);
   }
 
   getJobSearchLocation(): string {
+    const storedLocation = this.getStoredValue(this.jobSearchLocationStorageKey);
+    if (storedLocation?.trim()) {
+      this.jobSearchLocation = storedLocation.trim();
+    }
+
     return this.jobSearchLocation;
   }
 
@@ -152,8 +153,50 @@ export class SearchQueryStateService {
     this.saveSuccess = false;
     this.jobInputs = [{ id: 1, description: '' }];
     this.jobMatchResults = [];
-    this.jobSearchLocation = 'Nürnberg';
+    this.jobSearchLocation = 'N\u00fcrnberg';
     this.includeRemote = true;
+    this.removeStoredValue(this.selectedProfileIdStorageKey);
+    this.removeStoredValue(this.jobSearchLocationStorageKey);
+  }
+
+  private copyAnalysis(data: CvAnalysisResponse): CvAnalysisResponse {
+    return {
+      summary: data.summary,
+      searchRoles: [...data.searchRoles],
+      alternativeCareerRoles: [...data.alternativeCareerRoles],
+      keywords: [...data.keywords]
+    };
+  }
+
+  private copyQueries(data: SearchQueryGenerationResponse): SearchQueryGenerationResponse {
+    return {
+      roleTitleQueries: [...data.roleTitleQueries],
+      requirementBasedQueries: [...data.requirementBasedQueries],
+      alternativeDirectionQueries: [...data.alternativeDirectionQueries]
+    };
+  }
+
+  private getStoredValue(key: string): string | null {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private setStoredValue(key: string, value: string): void {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // URL params and backend state still keep the app usable.
+    }
+  }
+
+  private removeStoredValue(key: string): void {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
   }
 }
-

@@ -85,6 +85,8 @@ public class GeminiSearchQueryClient {
                 - Queries should be practical for job boards like LinkedIn, Indeed, StepStone or company career pages.
                 - Use concise search phrases, not full sentences.
                 - Do not invent skills that are not supported by the profile.
+                - Do not generate senior-level queries such as senior, lead, staff, principal, manager, head, architect, or similar.
+                - Keep roleTitleQueries and requirementBasedQueries focused on first real junior jobs, not internships, apprenticeships, or student jobs.
                 - Return only JSON.
                 """.formatted(
                 profile.getSummary(),
