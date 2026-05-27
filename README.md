@@ -29,7 +29,7 @@ CareerFlow brings these steps into one workflow by combining AI-assisted profile
 **Search Control And Filtering**
 
 - Lets the user review and edit extracted search roles, alternative career roles, keywords, and generated queries
-- Lets the user choose the target seniority level: junior or senior/middle
+- Lets the user choose the target seniority level: junior or mid/senior
 - Prefilters vacancies before Gemini match scoring to reduce noise and avoid unnecessary API calls
 - Excludes jobs already saved in Match History from future ranking for the same profile
 
@@ -41,7 +41,7 @@ CareerFlow brings these steps into one workflow by combining AI-assisted profile
 
 CareerFlow currently collects jobs from:
 
-- Bundesagentur fuer Arbeit
+- Bundesagentur für Arbeit
 - Arbeitnow
 - Remotive
 
@@ -63,7 +63,7 @@ These providers do not require API keys. Only Gemini requires an API key.
 - Java 21
 - Spring Boot
 - Spring Data JPA
-- Spring Security
+- Spring Security configuration
 - Flyway
 - MySQL 8
 - Gemini API
@@ -134,7 +134,7 @@ flowchart TB
         RankingEndpoint --> BuildSearchInput[Backend loads saved profile and Generated Search Queries]
         BuildSearchInput --> ProviderSearch[Backend searches job providers in parallel]
 
-        ProviderSearch --> Bundesagentur[Bundesagentur fuer Arbeit searches with Generated Search Queries and selected location]
+        ProviderSearch --> Bundesagentur[Bundesagentur für Arbeit searches with Generated Search Queries and selected location]
         Bundesagentur --> BundesagenturFilter[Backend deduplicates Bundesagentur results, then applies seniority and profile filters]
 
         ProviderSearch --> Arbeitnow[Arbeitnow loads cached jobs]
@@ -273,7 +273,7 @@ flowchart TB
     GeminiMatch --> Gemini
 
     ArbeitnowProvider --> ArbeitnowApi[Arbeitnow API]
-    BundesagenturProvider --> BundesagenturApi[Bundesagentur fuer Arbeit API]
+    BundesagenturProvider --> BundesagenturApi[Bundesagentur für Arbeit API]
     RemotiveProvider --> RemotiveApi[Remotive API]
 
     Flyway[Flyway migrations] --> DB
@@ -286,14 +286,32 @@ Remotive does not have a separate prefiltered service class; its prefiltering is
 
 Create a local `.env` file in the project root based on `.env.example`.
 
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
 ```env
 MYSQL_ROOT_PASSWORD=change_me
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
+Replace the example values before starting the backend.
+
+For security reasons, only `.env.example` is committed. Local secrets such as `GEMINI_API_KEY` should be placed in a private `.env` file.
+
 ## Local Setup
 
 ### 1. Start MySQL
+
+From the project root:
 
 ```bash
 docker compose up -d
@@ -303,16 +321,18 @@ MySQL is exposed on port `3308`, and the database name is `careerflow`.
 
 ### 2. Start Backend
 
-From the `backend` directory:
-
-```bash
-./gradlew bootRun
-```
-
-On Windows PowerShell:
+From the project root:
 
 ```powershell
+cd backend
 .\gradlew.bat bootRun
+```
+
+On macOS/Linux:
+
+```bash
+cd backend
+./gradlew bootRun
 ```
 
 Backend runs on:
@@ -323,9 +343,10 @@ http://localhost:8081
 
 ### 3. Start Frontend
 
-From the `frontend` directory:
+From the project root:
 
 ```bash
+cd frontend
 npm install
 npm start
 ```
@@ -392,7 +413,7 @@ Job Tracker keeps saved vacancies and applications in one table with status, app
 
 - Gemini calls are intentionally sequential and delayed to reduce rate-limit issues on free-tier usage.
 - External job provider APIs can change or return different results over time.
-- The filtering strategy is profile-driven and can be adjusted for junior or senior/middle searches.
+- The filtering strategy is profile-driven and can be adjusted for junior or mid/senior searches.
 - Generated queries can intentionally include alternative career directions when the user is open to adjacent roles.
 
 ## Future Improvements
